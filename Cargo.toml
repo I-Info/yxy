@@ -2,6 +2,9 @@
 name = "yxy"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = ["IInfo <info@i1nfo.com>"]
+description = "YXY platform spider"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,7 +14,7 @@ tokio = { version = "1.6", features = ["full"] }
 rsa = {version = "0.6.1"}
 rand = "0.8.3"
 base64 = "0.13.0"
-clap = "3.1.18"
+clap = {version ="3.1.18", features = ["derive"] }
 rust-crypto = "^0.2"
 serde = "1.0"
 serde_yaml = "0.8"
