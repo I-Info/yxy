@@ -16,12 +16,9 @@ pub fn parse_public_key_pem(raw: &str) -> String {
     result
 }
 
-pub fn md5<T: Into<String>>(input: T) -> [u8; 16] {
+pub fn md5<T: Into<String>>(input: T) -> String {
     let mut md5 = md5::Md5::new();
     md5.input_str(&input.into());
-    let mut result: [u8; 16] = [0; 16];
-    md5.result_str();
-    md5.result(&mut result);
 
-    result
+    md5.result_str()
 }
