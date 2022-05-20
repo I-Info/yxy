@@ -1,18 +1,19 @@
-use clap::Parser;
 use std::error::Error;
 
-/// Arguments
-#[derive(Parser, Debug)]
-#[clap(author, version, about)]
-struct Args {
-    /// Custom config file
-    #[clap(short, long)]
-    config: Option<String>,
-}
+use clap::Parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = Args::parse();
+    let args = yxy::conf::Args::parse();
     println!("{:?}", args);
+
+    let conf_path = match args.config {
+        Some(c) => c,
+        None => String::from("./conf.yaml"),
+    };
+
+    let conf = yxy::conf::Config::parse(conf_path)?;
+
+    println!("{:?}", conf);
 
     Ok(())
 }

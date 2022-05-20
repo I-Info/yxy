@@ -2,6 +2,7 @@ use base64;
 use rsa::{pkcs8::DecodePublicKey, PaddingScheme, PublicKey, RsaPublicKey};
 use std::error::Error;
 
+pub mod conf;
 pub mod utils;
 
 /// Encrypt password by `PKCS1v15(MD5(<password>))`
