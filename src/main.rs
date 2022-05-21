@@ -3,7 +3,7 @@ use std::error::Error;
 use clap::Parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = yxy::conf::Args::parse();
+    let args = yxy::flags::Args::parse();
     println!("{:?}", args);
 
     let conf_path = match args.config {

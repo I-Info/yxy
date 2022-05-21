@@ -3,6 +3,7 @@ use rsa::{pkcs8::DecodePublicKey, PaddingScheme, PublicKey, RsaPublicKey};
 use std::error::Error;
 
 pub mod conf;
+pub mod flags;
 pub mod utils;
 
 /// Encrypt password by `PKCS1v15(MD5(<password>))`

@@ -1,15 +1,5 @@
-use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-
-/// Arguments
-#[derive(Parser, Debug)]
-#[clap(author, version, about)]
-pub struct Args {
-    /// Custom config file
-    #[clap(short, long)]
-    pub config: Option<String>,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ConfigInfo {
