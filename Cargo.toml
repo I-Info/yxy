@@ -9,7 +9,7 @@ description = "YXY platform spider"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["blocking","json"] }
 tokio = { version = "1.6", features = ["full"] }
 rsa = {version = "0.6.1"}
 rand = "0.8.3"

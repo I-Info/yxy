@@ -1,4 +1,7 @@
+use base64;
 use crypto::{digest::Digest, md5};
+use rsa::{pkcs8::DecodePublicKey, PaddingScheme, PublicKey, RsaPublicKey};
+use std::error::Error;
 
 /// Parse unformatted pure Base64 public key to PEM format
 ///
@@ -16,9 +19,28 @@ pub fn parse_public_key_pem(raw: &str) -> String {
     result
 }
 
+/// Return MD5 Hex string
 pub fn md5<T: Into<String>>(input: T) -> String {
     let mut md5 = md5::Md5::new();
     md5.input_str(&input.into());
 
     md5.result_str()
+}
+
+/// Encrypt password by `PKCS1v15(MD5(<password>))`
+///
+/// Return Base64 String
+pub fn encrypt_password(pass: &str, raw_pub: &str) -> Result<String, Box<dyn Error>> {
+    let pem = parse_public_key_pem(raw_pub);
+    let public_key = RsaPublicKey::from_public_key_pem(&pem)?;
+
+    let mut rng = rand::thread_rng(); // random generator
+
+    let pass_md5 = md5(pass);
+
+    let padding = PaddingScheme::new_pkcs1v15_encrypt();
+    let encrypted = public_key.encrypt(&mut rng, padding, pass_md5.as_bytes())?;
+
+    let result = base64::encode(encrypted);
+    Ok(result)
 }
