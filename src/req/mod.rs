@@ -1,6 +1,6 @@
 //! Requests
 use reqwest::header;
-use std::time::Duration;
+use std::{error::Error, time::Duration};
 
 pub mod auth;
 pub mod url;
@@ -25,16 +25,13 @@ fn get_default_headers() -> header::HeaderMap {
 }
 
 /// Init default reqwest (blocking) client.
-///
-/// Panic on failed.
-pub fn init_default_client() -> reqwest::blocking::Client {
+pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>> {
     let builder: reqwest::blocking::ClientBuilder = reqwest::blocking::Client::builder();
     let result: reqwest::blocking::Client = builder
         .connect_timeout(Duration::new(5, 0))
         .user_agent(USER_AGENT)
         .default_headers(get_default_headers())
-        .build()
-        .expect("Init default reqwest client failed"); // Panic on failed
+        .build()?;
 
-    result
+    Ok(result)
 }
