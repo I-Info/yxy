@@ -1,4 +1,4 @@
-/// Requests
+//! Requests
 use reqwest::header;
 use std::time::Duration;
 
@@ -24,7 +24,7 @@ fn get_default_headers() -> header::HeaderMap {
     headers
 }
 
-/// Init default reqwest client.
+/// Init default reqwest (blocking) client.
 ///
 /// Panic on failed.
 pub fn init_default_client() -> reqwest::blocking::Client {
