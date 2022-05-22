@@ -10,6 +10,7 @@ pub struct ConfigInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub info: ConfigInfo,
+    pub cookie_file: Option<String>,
 }
 
 impl Config {

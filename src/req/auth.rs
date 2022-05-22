@@ -61,7 +61,7 @@ impl Handler {
     }
 
     /// Authorize the handler and fetch user infos
-    pub fn authorize(&mut self, code: &str) -> Result<UserInfo, Box<dyn Error>> {
+    pub fn authorize(&mut self, code: &str) -> Result<(&str, UserInfo), Box<dyn Error>> {
         // Form data
         let mut params = HashMap::new();
         params.insert("code", code);
@@ -89,7 +89,7 @@ impl Handler {
         if let Some(v) = resp_ser.data {
             // set session
             self.session.replace(session);
-            Ok(v)
+            Ok((&self.session.as_deref().unwrap(), v))
         } else {
             return Err(Box::new(crate::error::Error {
                 code: 4,
