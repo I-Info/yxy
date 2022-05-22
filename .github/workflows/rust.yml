@@ -21,14 +21,13 @@ jobs:
       run: rustc --print target-list
     
     - name: Build
-      run: cargo build -v 
+      run: cargo build -vr
     
     - name: Run tests
-      run: cargo test -v
+      run: cargo test -vr
       
-    - name: Build release
+    - name: Packup artifacts
       run: | 
-        cargo build -vr
         cd target
         tar -czf release.tar.gz *yxy*
       
