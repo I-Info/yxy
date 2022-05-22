@@ -34,7 +34,6 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>
         .connect_timeout(Duration::new(5, 0))
         .user_agent(USER_AGENT)
         .default_headers(get_default_headers())
-        .cookie_store(true)
         .build()?;
 
     Ok(result)
