@@ -2,36 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: List support target platform
-      run: rustc --print target-list
-    
-    - name: Build
-      run: cargo build -vr
-    
-    - name: Run tests
-      run: cargo test -vr
-      
-    - name: Packup artifacts
-      run: | 
-        cd target
-        tar -czf release.tar.gz *yxy*
-      
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v3.1.0
-      with:
-        path: target/release.tar.gz
+      - uses: actions/checkout@v3
+
+      - name: List support target platform
+        run: rustc --print target-list
+
+      - name: Build
+        run: cargo build -vr
+
+      - name: Run tests
+        run: cargo test -vr
+
+      - name: Pack up artifacts
+        run: |
+          cd target
+          tar -czf release.tar.gz yxy libyxy.rlib
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          path: target/release.tar.gz
