@@ -8,5 +8,11 @@ pub mod auth {
 }
 
 pub mod application {
+    use const_format::concatcp;
+
     pub const BASE_URL: &'static str = "https://application.xiaofubao.com";
+    pub const GET_USER_FOR_AUTHORIZE: &'static str =
+        concatcp!(BASE_URL, "/app/login/getUser4Authorize");
+    pub const QUERY_ELECTRIC: &'static str =
+        concatcp!(BASE_URL, "/app/electric/queryISIMSRoomSurplus");
 }
