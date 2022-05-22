@@ -6,7 +6,7 @@ YXY(YSchool) platform spider library, written in rust.
 - [ ] Subscribe some balance status.
   - Email
   - WeChat
-- [ ] Auto recharge electricity bill.
+- [ ] Automatic electricity bill payment.
 - [ ] Simulate APP login.
 - [ ] More query or functions...
 
