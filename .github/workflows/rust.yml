@@ -28,7 +28,8 @@ jobs:
       - name: Pack up artifacts
         run: |
           cd target
-          tar -czf release.tar.gz yxy libyxy.rlib
+          ls -llh release
+          tar -czf release.tar.gz release/yxy release/libyxy.rlib
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3.1.0
