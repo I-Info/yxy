@@ -61,7 +61,7 @@ impl Handler {
     }
 
     /// Authorize the handler and fetch user infos
-    pub fn authorize(&mut self, code: &str) -> Result<(), Box<dyn Error>> {
+    pub fn authorize(&mut self, code: &str) -> Result<UserInfo, Box<dyn Error>> {
         // Form data
         let mut params = HashMap::new();
         params.insert("code", code);
@@ -84,20 +84,18 @@ impl Handler {
             }
         };
 
-        let response_ser: AuthResponse = response.json()?;
+        let resp_ser: AuthResponse = response.json()?;
         // Set user info
-        if let Some(v) = response_ser.data {
+        if let Some(v) = resp_ser.data {
             // set session
-            self.user_info.replace(v);
             self.session.replace(session);
+            Ok(v)
         } else {
             return Err(Box::new(crate::error::Error {
                 code: 4,
-                msg: format!("Authorize failed: {}", response_ser.message),
+                msg: format!("Authorize failed: {}", resp_ser.message),
             }));
         }
-
-        Ok(())
     }
 
     /// Return authorization status of handler

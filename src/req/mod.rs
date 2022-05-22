@@ -34,6 +34,7 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>
         .connect_timeout(Duration::new(5, 0))
         .user_agent(USER_AGENT)
         .default_headers(get_default_headers())
+        .cookie_store(true)
         .build()?;
 
     Ok(result)
@@ -63,7 +64,6 @@ pub struct UserInfo {
 #[derive(Debug)]
 pub struct Handler {
     pub session: Option<String>,
-    pub user_info: Option<UserInfo>,
     pub client: reqwest::blocking::Client,
 }
 
@@ -71,7 +71,6 @@ impl Handler {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             session: None,
-            user_info: None,
             client: init_default_client()?,
         })
     }

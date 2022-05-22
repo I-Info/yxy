@@ -15,8 +15,9 @@ pub fn run(conf: conf::Config) -> Result<(), Box<dyn Error>> {
     println!("OAuth Code: {}", oauth_code);
 
     println!("Trying to login...");
-    handler.authorize(&oauth_code)?;
+    let user = handler.authorize(&oauth_code)?;
     println!("Authorized: {}", handler.session.unwrap());
+    println!("Logged in as: {:?}", user);
 
     Ok(())
 }
