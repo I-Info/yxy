@@ -8,15 +8,15 @@ pub mod utils;
 
 /// Entrance of the main application
 pub fn run(conf: conf::Config) -> Result<(), Box<dyn Error>> {
-    let client = req::init_default_client()?; // Global default client
+    let mut handler = req::Handler::new()?; // Global handler
 
     println!("Trying to get oauth code...");
-    let oauth_code = req::auth::get_oauth_code(&client, &conf.info.id)?;
+    let oauth_code = handler.get_oauth_code(&conf.info.id)?;
     println!("OAuth Code: {}", oauth_code);
 
     println!("Trying to login...");
-    let auth_result = req::auth::authorize(&client, &oauth_code)?;
-    println!("Authorized: {}", auth_result.session);
+    handler.authorize(&oauth_code)?;
+    println!("Authorized: {}", handler.session.unwrap());
 
     Ok(())
 }

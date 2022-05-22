@@ -1,6 +1,7 @@
 # YXY
 YXY(YSchool) platform spider library, written in rust.
 
+[![CI](https://github.com/I-Info/yxy/actions/workflows/rust.yml/badge.svg)](https://github.com/I-Info/yxy/actions/workflows/rust.yml)
 ## WIP
 - [ ] Query electricity balance.
 - [ ] Subscribe some balance status.

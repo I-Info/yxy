@@ -4,6 +4,7 @@ use std::{error::Error, time::Duration};
 use reqwest::{blocking::Response, header};
 use serde::{Deserialize, Serialize};
 
+pub mod app;
 pub mod auth;
 pub mod url;
 
@@ -38,17 +39,6 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>
     Ok(result)
 }
 
-fn check_response(res: &Response) -> Result<(), crate::error::Error> {
-    if !res.status().is_success() {
-        return Err(crate::error::Error {
-            code: 1,
-            msg: format!("remote server returned {} status", res.status()),
-        });
-    }
-
-    Ok(())
-}
-
 /// User info provided by platform
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -67,4 +57,33 @@ pub struct UserInfo {
     pub test_account: u8,
     pub platform: String,
     pub third_openid: String,
+}
+
+/// Session handle
+#[derive(Debug)]
+pub struct Handler {
+    pub session: Option<String>,
+    pub user_info: Option<UserInfo>,
+    pub client: reqwest::blocking::Client,
+}
+
+impl Handler {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            session: None,
+            user_info: None,
+            client: init_default_client()?,
+        })
+    }
+
+    fn check_response(res: &Response) -> Result<(), crate::error::Error> {
+        if !res.status().is_success() {
+            return Err(crate::error::Error {
+                code: 1,
+                msg: format!("remote server returned {} status", res.status()),
+            });
+        }
+
+        Ok(())
+    }
 }
