@@ -1,10 +1,8 @@
 //! Application APIs
-
-use std::error::Error;
-
 use serde::{Deserialize, Serialize};
 
 use super::{check_response, url, Handler};
+use crate::error::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -99,7 +97,7 @@ impl Handler {
     /// Query Bind infos
     ///
     /// Only return one bind info from list
-    pub fn query_bind(&self) -> Result<BindInfo, Box<dyn Error>> {
+    pub fn query_bind(&self) -> Result<BindInfo, Error> {
         let form = vec![("bindType", "3")];
         let resp = self
             .client
@@ -110,37 +108,26 @@ impl Handler {
         let resp_ser: QueryBindResponse = resp.json()?;
         if resp_ser.success == false {
             if resp_ser.status_code == 204 {
-                return Err(Box::new(crate::error::Error {
-                    code: 5,
-                    msg: "Auth expired.".into(),
-                }));
+                return Err(Error::AuthExpired);
             }
-            return Err(Box::new(crate::error::Error {
-                code: 6,
-                msg: format!("Fail to query bind: {}", resp_ser.message.unwrap()),
-            }));
+            return Err(Error::Runtime(format!(
+                "Fail to query bind: {}",
+                resp_ser.message.unwrap()
+            )));
         }
 
         // Take data
         if let Some(mut bind_info) = resp_ser.rows {
             Ok(match bind_info.pop() {
                 Some(v) => v,
-                None => {
-                    return Err(Box::new(crate::error::Error {
-                        code: 2,
-                        msg: "Empty response".into(),
-                    }))
-                }
+                None => return Err(Error::EmptyResp),
             })
         } else {
-            Err(Box::new(crate::error::Error {
-                code: 2,
-                msg: "Empty response".into(),
-            }))
+            Err(Error::EmptyResp)
         }
     }
 
-    pub fn query_electricity(&self, info: RoomInfo) -> Result<ElectricityInfo, Box<dyn Error>> {
+    pub fn query_electricity(&self, info: RoomInfo) -> Result<ElectricityInfo, Error> {
         let resp = self
             .client
             .post(url::application::QUERY_ELECTRICITY)
@@ -151,24 +138,18 @@ impl Handler {
 
         if resp_ser.success == false {
             if resp_ser.status_code == 204 {
-                return Err(Box::new(crate::error::Error {
-                    code: 5,
-                    msg: "Auth expired.".into(),
-                }));
+                return Err(Error::AuthExpired);
             }
-            return Err(Box::new(crate::error::Error {
-                code: 7,
-                msg: format!("Fail to query electricity: {}", resp_ser.message),
-            }));
+            return Err(Error::Runtime(format!(
+                "Fail to query electricity: {}",
+                resp_ser.message
+            )));
         }
 
         if let Some(v) = resp_ser.data {
             Ok(v)
         } else {
-            Err(Box::new(crate::error::Error {
-                code: 2,
-                msg: "Empty response".into(),
-            }))
+            Err(Error::EmptyResp)
         }
     }
 }

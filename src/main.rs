@@ -14,5 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let conf = yxy::conf::Config::parse(&conf_path)?;
     // println!("{:?}", conf);
 
-    yxy::run(conf, opts)
+    yxy::run(conf, opts)?;
+
+    Ok(())
 }

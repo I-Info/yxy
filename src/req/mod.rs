@@ -1,7 +1,9 @@
 //! Requests
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use reqwest::{blocking::Response, cookie::Jar, header};
+
+use crate::error::Error;
 
 pub mod app;
 pub mod auth;
@@ -27,7 +29,7 @@ fn get_default_headers() -> header::HeaderMap {
 }
 
 /// Init default reqwest (blocking) client.
-pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>> {
+pub fn init_default_client() -> Result<reqwest::blocking::Client, Error> {
     let builder: reqwest::blocking::ClientBuilder = reqwest::blocking::Client::builder();
     let result: reqwest::blocking::Client = builder
         .connect_timeout(Duration::new(5, 0))
@@ -45,13 +47,13 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn new(session: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: &str) -> Result<Self, Error> {
         Ok(Self {
             client: {
                 let jar = Jar::default();
                 jar.add_cookie_str(
                     &format!("{}={}", auth::SESSION_KEY, session),
-                    &reqwest::Url::parse(url::application::BASE_URL)?,
+                    &reqwest::Url::parse(url::application::BASE_URL).unwrap(),
                 );
                 reqwest::blocking::Client::builder()
                     .connect_timeout(Duration::new(5, 0))
@@ -64,12 +66,9 @@ impl Handler {
     }
 }
 
-fn check_response(res: &Response) -> Result<(), crate::error::Error> {
+fn check_response(res: &Response) -> Result<(), Error> {
     if !res.status().is_success() {
-        return Err(crate::error::Error {
-            code: 1,
-            msg: format!("remote server returned {} status", res.status()),
-        });
+        return Err(Error::Runtime(format!("bad response: {}", res.status())));
     }
 
     Ok(())

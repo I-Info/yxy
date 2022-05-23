@@ -1,10 +1,11 @@
 //! Authorization APIs
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
 use super::{check_response, url};
+use crate::error::Error;
 
 /// A constant value
 const APPID: &'static str = "1810181825222034";
@@ -55,7 +56,7 @@ fn extract_code(text: &str) -> Option<String> {
     }
 }
 
-pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Box<dyn Error>> {
+pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Error> {
     let response = client
         .get(url::auth::OAUTH_URL)
         .query(&[
@@ -72,15 +73,12 @@ pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Box<dyn Error
 
     match extract_code(&text) {
         Some(t) => Ok(t),
-        None => Err(Box::new(crate::error::Error {
-            code: 2,
-            msg: "Empty response".into(),
-        })),
+        None => Err(Error::EmptyResp),
     }
 }
 
 /// Authorize the handler and fetch user infos
-pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Box<dyn Error>> {
+pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Error> {
     // Form data
     let mut params = HashMap::new();
     params.insert("code", code);
@@ -95,10 +93,9 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Box<
     let session = match response.cookies().find(|x| x.name() == SESSION_KEY) {
         Some(v) => (v.value().to_string()),
         None => {
-            return Err(Box::new(crate::error::Error {
-                code: 3,
-                msg: "Authorize failed: no cookie returned".into(),
-            }))
+            return Err(Error::Runtime(
+                "authorize failed: no cookie returned".into(),
+            ))
         }
     };
 
@@ -107,9 +104,9 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Box<
     if let Some(v) = resp_ser.data {
         Ok((session, v))
     } else {
-        return Err(Box::new(crate::error::Error {
-            code: 4,
-            msg: format!("Authorize failed: {}", resp_ser.message),
-        }));
+        return Err(Error::Runtime(format!(
+            "Authorize failed: {}",
+            resp_ser.message
+        )));
     }
 }

@@ -1,13 +1,11 @@
-use std::error::Error;
-
 pub mod arg;
 pub mod conf;
 pub(crate) mod error;
 pub mod req;
 pub mod utils;
 
-/// Entrance of the main application
-pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), Box<dyn Error>> {
+/// Entrance for bin application
+pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), error::Error> {
     // Read the session cache
     let mut session = match &conf.cookie_file {
         None => None,
@@ -29,13 +27,32 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), Box<dyn Error>>
         }
     };
 
-    if session.is_none() {
-        let (ses, _) = start_auth(&conf.info.id, &conf.cookie_file)?;
-        session.replace(ses);
+    let mut tried = false;
+    loop {
+        if session.is_none() {
+            let (ses, _) = start_auth(&conf.info.id, &conf.cookie_file)?;
+            session.replace(ses);
+        }
+
+        if let Err(e) = start_app(session.as_ref().unwrap()) {
+            // Handle errors
+            match e {
+                error::Error::AuthExpired => {
+                    if tried {
+                        return Err(error::Error::Auth(
+                            "Maximum auth retry number reached.".into(),
+                        ));
+                    }
+                    session.take();
+                    eprintln!("Auth may expired, trying to reauthorize.")
+                }
+                _ => return Err(e),
+            }
+        } else {
+            break;
+        }
+        tried = true;
     }
-
-    start_app(session.as_ref().unwrap())?;
-
     Ok(())
 }
 
@@ -43,7 +60,7 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), Box<dyn Error>>
 fn start_auth(
     id: &str,
     path: &Option<String>,
-) -> Result<(String, req::auth::UserInfo), Box<dyn Error>> {
+) -> Result<(String, req::auth::UserInfo), error::Error> {
     let client = req::init_default_client()?;
     println!("Trying to get oauth code...");
     let oauth_code = req::auth::get_oauth_code(&client, id)?;
@@ -64,7 +81,8 @@ fn start_auth(
     Ok((ses, user))
 }
 
-fn start_app(session: &str) -> Result<(), Box<dyn Error>> {
+/// App procedure
+fn start_app(session: &str) -> Result<(), error::Error> {
     // Init authorized handler
     let handler = req::Handler::new(session)?;
 
