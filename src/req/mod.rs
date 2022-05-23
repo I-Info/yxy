@@ -62,26 +62,26 @@ pub struct UserInfo {
 /// Session handle
 #[derive(Debug)]
 pub struct Handler {
-    pub session: Option<String>,
+    pub session: String,
     pub client: reqwest::blocking::Client,
 }
 
 impl Handler {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: String) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
-            session: None,
+            session,
             client: init_default_client()?,
         })
     }
+}
 
-    fn check_response(res: &Response) -> Result<(), crate::error::Error> {
-        if !res.status().is_success() {
-            return Err(crate::error::Error {
-                code: 1,
-                msg: format!("remote server returned {} status", res.status()),
-            });
-        }
-
-        Ok(())
+fn check_response(res: &Response) -> Result<(), crate::error::Error> {
+    if !res.status().is_success() {
+        return Err(crate::error::Error {
+            code: 1,
+            msg: format!("remote server returned {} status", res.status()),
+        });
     }
+
+    Ok(())
 }

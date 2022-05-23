@@ -13,6 +13,7 @@ pub mod application {
     pub const BASE_URL: &'static str = "https://application.xiaofubao.com";
     pub const GET_USER_FOR_AUTHORIZE: &'static str =
         concatcp!(BASE_URL, "/app/login/getUser4Authorize");
+    pub const QUERY_BIND: &'static str = concatcp!(BASE_URL, "/app/electric/queryBind");
     pub const QUERY_ELECTRIC: &'static str =
         concatcp!(BASE_URL, "/app/electric/queryISIMSRoomSurplus");
 }

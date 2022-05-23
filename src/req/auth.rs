@@ -1,9 +1,10 @@
 //! Authorization APIs
 use std::{collections::HashMap, error::Error};
 
+use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
-use super::{url, Handler, UserInfo};
+use super::{check_response, url, UserInfo};
 
 /// A constant value
 const APPID: &'static str = "1810181825222034";
@@ -34,75 +35,61 @@ fn extract_code(text: &str) -> Option<String> {
     }
 }
 
-impl Handler {
-    pub fn get_oauth_code(&self, id: &str) -> Result<String, Box<dyn Error>> {
-        let response = self
-            .client
-            .get(url::auth::OAUTH_URL)
-            .query(&[
-                ("bindSkip", "1"),
-                ("authType", "2"),
-                ("appid", APPID),
-                ("callbackUrl", url::application::BASE_URL),
-                ("unionid", id),
-            ])
-            .send()?;
-        Self::check_response(&response)?;
+pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Box<dyn Error>> {
+    let response = client
+        .get(url::auth::OAUTH_URL)
+        .query(&[
+            ("bindSkip", "1"),
+            ("authType", "2"),
+            ("appid", APPID),
+            ("callbackUrl", url::application::BASE_URL),
+            ("unionid", id),
+        ])
+        .send()?;
+    check_response(&response)?;
 
-        let text = response.text()?;
+    let text = response.text()?;
 
-        match extract_code(&text) {
-            Some(t) => Ok(t),
-            None => Err(Box::new(crate::error::Error {
-                code: 2,
-                msg: "no code find in response".into(),
-            })),
-        }
+    match extract_code(&text) {
+        Some(t) => Ok(t),
+        None => Err(Box::new(crate::error::Error {
+            code: 2,
+            msg: "no code find in response".into(),
+        })),
     }
+}
 
-    /// Authorize the handler and fetch user infos
-    pub fn authorize(&mut self, code: &str) -> Result<(&str, UserInfo), Box<dyn Error>> {
-        // Form data
-        let mut params = HashMap::new();
-        params.insert("code", code);
+/// Authorize the handler and fetch user infos
+pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Box<dyn Error>> {
+    // Form data
+    let mut params = HashMap::new();
+    params.insert("code", code);
 
-        let response = self
-            .client
-            .post(url::application::GET_USER_FOR_AUTHORIZE)
-            .form(&params)
-            .send()?;
-        Self::check_response(&response)?;
+    let response = client
+        .post(url::application::GET_USER_FOR_AUTHORIZE)
+        .form(&params)
+        .send()?;
+    check_response(&response)?;
 
-        // get session
-        let session = match response.cookies().find(|x| x.name() == SESSION_KEY) {
-            Some(v) => (v.value().to_string()),
-            None => {
-                return Err(Box::new(crate::error::Error {
-                    code: 3,
-                    msg: "Authorize failed: no cookie returned".into(),
-                }))
-            }
-        };
-
-        let resp_ser: AuthResponse = response.json()?;
-        // Set user info
-        if let Some(v) = resp_ser.data {
-            // set session
-            self.session.replace(session);
-            Ok((&self.session.as_deref().unwrap(), v))
-        } else {
+    // get session
+    let session = match response.cookies().find(|x| x.name() == SESSION_KEY) {
+        Some(v) => (v.value().to_string()),
+        None => {
             return Err(Box::new(crate::error::Error {
-                code: 4,
-                msg: format!("Authorize failed: {}", resp_ser.message),
-            }));
+                code: 3,
+                msg: "Authorize failed: no cookie returned".into(),
+            }))
         }
-    }
+    };
 
-    /// Return authorization status of handler
-    pub fn auth_status(&self) -> bool {
-        match self.session {
-            Some(_) => true,
-            None => false,
-        }
+    let resp_ser: AuthResponse = response.json()?;
+    // Set user info
+    if let Some(v) = resp_ser.data {
+        Ok((session, v))
+    } else {
+        return Err(Box::new(crate::error::Error {
+            code: 4,
+            msg: format!("Authorize failed: {}", resp_ser.message),
+        }));
     }
 }
