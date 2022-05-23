@@ -34,17 +34,16 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), Box<dyn Error>>
         session.replace(ses);
     }
 
-    // Query Bind Info
-    println!("Querying bind info...");
-    let handler = req::Handler::new(session.as_ref().unwrap())?;
-    let bind_info = handler.query_bind()?;
-    println!("Bind info: {:?}", bind_info);
+    start_app(session.as_ref().unwrap())?;
 
     Ok(())
 }
 
 /// Authorization procedure
-fn start_auth(id: &str, path: &Option<String>) -> Result<(String, req::UserInfo), Box<dyn Error>> {
+fn start_auth(
+    id: &str,
+    path: &Option<String>,
+) -> Result<(String, req::auth::UserInfo), Box<dyn Error>> {
     let client = req::init_default_client()?;
     println!("Trying to get oauth code...");
     let oauth_code = req::auth::get_oauth_code(&client, id)?;
@@ -63,4 +62,26 @@ fn start_auth(id: &str, path: &Option<String>) -> Result<(String, req::UserInfo)
     }
 
     Ok((ses, user))
+}
+
+fn start_app(session: &str) -> Result<(), Box<dyn Error>> {
+    // Init authorized handler
+    let handler = req::Handler::new(session)?;
+
+    // Query Bind Info
+    println!("Querying bind info...");
+    let bind_info = handler.query_bind()?;
+    println!("Bind info: {:?}", bind_info);
+
+    // Query Electricity Info
+    println!("Query electricity info...");
+    let room_info = req::app::RoomInfo {
+        area_id: &bind_info.area_id,
+        building_code: &bind_info.building_code,
+        floor_code: &bind_info.floor_code,
+        room_code: &bind_info.room_code,
+    };
+    let electricity_info = handler.query_electricity(room_info)?;
+    println!("Electricity info: {:?}", electricity_info);
+    Ok(())
 }

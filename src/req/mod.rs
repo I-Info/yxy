@@ -2,7 +2,6 @@
 use std::{error::Error, sync::Arc, time::Duration};
 
 use reqwest::{blocking::Response, cookie::Jar, header};
-use serde::{Deserialize, Serialize};
 
 pub mod app;
 pub mod auth;
@@ -37,26 +36,6 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Box<dyn Error>
         .build()?;
 
     Ok(result)
-}
-
-/// User info provided by platform
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UserInfo {
-    pub id: String,
-    pub school_code: String,
-    pub school_name: String,
-    pub user_name: String,
-    pub user_type: String,
-    pub mobile_phone: String,
-    pub job_no: String,
-    pub user_idcard: String,
-    pub sex: u8,
-    pub user_class: String,
-    pub bind_card_status: u8,
-    pub test_account: u8,
-    pub platform: String,
-    pub third_openid: String,
 }
 
 /// Session handle
