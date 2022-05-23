@@ -1,7 +1,7 @@
 //! Requests
-use std::{error::Error, time::Duration};
+use std::{error::Error, sync::Arc, time::Duration};
 
-use reqwest::{blocking::Response, header};
+use reqwest::{blocking::Response, cookie::Jar, header};
 use serde::{Deserialize, Serialize};
 
 pub mod app;
@@ -62,15 +62,25 @@ pub struct UserInfo {
 /// Session handle
 #[derive(Debug)]
 pub struct Handler {
-    pub session: String,
     pub client: reqwest::blocking::Client,
 }
 
 impl Handler {
-    pub fn new(session: String) -> Result<Self, Box<dyn Error>> {
+    pub fn new(session: &str) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
-            session,
-            client: init_default_client()?,
+            client: {
+                let jar = Jar::default();
+                jar.add_cookie_str(
+                    &format!("{}={}", auth::SESSION_KEY, session),
+                    &reqwest::Url::parse(url::application::BASE_URL)?,
+                );
+                reqwest::blocking::Client::builder()
+                    .connect_timeout(Duration::new(5, 0))
+                    .user_agent(USER_AGENT)
+                    .default_headers(get_default_headers())
+                    .cookie_provider(Arc::new(jar))
+                    .build()?
+            },
         })
     }
 }

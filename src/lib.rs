@@ -34,6 +34,12 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), Box<dyn Error>>
         session.replace(ses);
     }
 
+    // Query Bind Info
+    println!("Querying bind info...");
+    let handler = req::Handler::new(session.as_ref().unwrap())?;
+    let bind_info = handler.query_bind()?;
+    println!("Bind info: {:?}", bind_info);
+
     Ok(())
 }
 

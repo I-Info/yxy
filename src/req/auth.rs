@@ -54,7 +54,7 @@ pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Box<dyn Error
         Some(t) => Ok(t),
         None => Err(Box::new(crate::error::Error {
             code: 2,
-            msg: "no code find in response".into(),
+            msg: "Empty response".into(),
         })),
     }
 }
