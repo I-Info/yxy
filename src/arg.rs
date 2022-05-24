@@ -15,6 +15,10 @@ pub struct Options {
     /// Force fresh session cache
     #[clap(short, long)]
     pub fresh: bool,
+
+    /// Verbose
+    #[clap(short, long)]
+    pub verbose: bool,
 }
 
 #[derive(ArgEnum, Clone, Debug)]
