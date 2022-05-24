@@ -8,7 +8,9 @@ pub enum Error {
     Auth(String),
     AuthExpired,
     Request(reqwest::Error),
+    Rsa(rsa::errors::Error),
     EmptyResp,
+    RsaPkcs(rsa::pkcs8::spki::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -20,6 +22,8 @@ impl std::fmt::Display for Error {
             Request(e) => write!(f, "Request error: {}", e),
             EmptyResp => write!(f, "Get empty response"),
             AuthExpired => write!(f, "Authorization expired"),
+            Rsa(e) => write!(f, "RSA crypto error: {}", e),
+            RsaPkcs(e) => write!(f, "RSA crypto error: {}", e),
         }
     }
 }
@@ -35,5 +39,17 @@ impl From<std::io::Error> for Error {
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         Self::Request(e)
+    }
+}
+
+impl From<rsa::errors::Error> for Error {
+    fn from(e: rsa::errors::Error) -> Self {
+        Self::Rsa(e)
+    }
+}
+
+impl From<rsa::pkcs8::spki::Error> for Error {
+    fn from(e: rsa::pkcs8::spki::Error) -> Self {
+        Self::RsaPkcs(e)
     }
 }

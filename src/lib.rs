@@ -5,7 +5,10 @@ pub mod req;
 pub mod utils;
 
 /// Entrance for bin application
-pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), error::Error> {
+pub fn run(
+    conf: conf::Config,
+    opts: arg::Options,
+) -> Result<req::app::ElectricityInfo, error::Error> {
     let verbose = opts.verbose;
     // Read the session cache
     let mut session = match &conf.cookie_file {
@@ -20,8 +23,10 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), error::Error> {
                         Some(v)
                     }
                     Err(e) => {
-                        eprintln!("Ignored session cache file reading error: {}", e);
-                        None
+                        if verbose {
+                            eprintln!("Session cache file reading error: {}", e);
+                        }
+                        return Err(error::Error::IO(e));
                     }
                 }
             } else {
@@ -33,7 +38,7 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), error::Error> {
     let mut tried = false;
     loop {
         if session.is_none() {
-            let (ses, _) = start_auth(&conf.info.id, &conf.cookie_file, verbose)?;
+            let (ses, _) = start_auth(&conf.uid, &conf.cookie_file, verbose)?;
             session.replace(ses);
         }
         match start_app(session.as_ref().unwrap(), verbose) {
@@ -47,20 +52,19 @@ pub fn run(conf: conf::Config, opts: arg::Options) -> Result<(), error::Error> {
                             ));
                         }
                         session.take();
-                        eprintln!("Auth may expired, trying to reauthorize.")
+                        if verbose {
+                            eprintln!("Auth may expired, trying to reauthorize.")
+                        }
                     }
                     _ => return Err(e),
                 }
                 tried = true;
             }
             Ok(v) => {
-                println!("ok: {}", v.soc);
-                break;
+                return Ok(v);
             }
         }
     }
-
-    Ok(())
 }
 
 /// Authorization procedure
@@ -95,9 +99,7 @@ fn start_auth(
         let (ses, user) = req::auth::authorize(&client, &oauth_code)?;
         // Cache the session
         if let Some(cookie_file) = path {
-            if let Err(e) = utils::file_write(cookie_file, &ses) {
-                eprintln!("Fail to cache the session id: {}", e);
-            }
+            utils::file_write(cookie_file, &ses)?;
         }
 
         Ok((ses, user))

@@ -1,15 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfigInfo {
-    pub id: String,
-}
-
 /// Configuration file
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub info: ConfigInfo,
+    pub uid: String,
     pub cookie_file: Option<String>,
 }
 

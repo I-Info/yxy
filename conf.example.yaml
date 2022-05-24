@@ -1,4 +1,2 @@
-info:
-  id: "123456"
-  phone: "18106666666"
-  pass: "password"
+uid: "123456"
+cookie_file: "./cookie.tmp"

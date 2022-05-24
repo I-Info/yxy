@@ -1,7 +1,9 @@
 use base64;
 use crypto::{digest::Digest, md5};
 use rsa::{pkcs8::DecodePublicKey, PaddingScheme, PublicKey, RsaPublicKey};
-use std::{error::Error, io::Write};
+use std::io::Write;
+
+use crate::error::Error;
 
 /// Parse unformatted pure Base64 public key to PEM format
 ///
@@ -30,7 +32,7 @@ pub fn md5<T: Into<String>>(input: T) -> String {
 /// Encrypt password by `PKCS1v15(MD5(<password>))`
 ///
 /// Return Base64 String
-pub fn encrypt_password(pass: &str, raw_pub: &str) -> Result<String, Box<dyn Error>> {
+pub fn encrypt_password(pass: &str, raw_pub: &str) -> Result<String, Error> {
     let pem = parse_public_key_pem(raw_pub);
     let public_key = RsaPublicKey::from_public_key_pem(&pem)?;
 
@@ -48,7 +50,7 @@ pub fn encrypt_password(pass: &str, raw_pub: &str) -> Result<String, Box<dyn Err
 /// Write string to file
 ///
 /// Auto create file
-pub fn file_write(path: &str, s: &str) -> Result<(), Box<dyn Error>> {
+pub fn file_write(path: &str, s: &str) -> Result<(), Error> {
     let mut f = std::fs::File::create(path)?;
     f.write(s.as_bytes())?;
     Ok(())

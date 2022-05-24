@@ -14,7 +14,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let conf = yxy::conf::Config::parse(&conf_path)?;
     // println!("{:?}", conf);
 
-    yxy::run(conf, opts)?;
+    let result = yxy::run(conf, opts)?;
+    println!("Electricity balance: {}", result.soc);
 
     Ok(())
 }
