@@ -7,6 +7,7 @@ use crate::error::Error;
 
 pub mod app;
 pub mod auth;
+pub mod login;
 pub mod url;
 
 const USER_AGENT: &'static str = "\
@@ -35,6 +36,20 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Error> {
         .connect_timeout(Duration::new(5, 0))
         .user_agent(USER_AGENT)
         .default_headers(get_default_headers())
+        .build()?;
+
+    Ok(result)
+}
+
+/// App simulated client
+pub fn init_app_sim_client() -> Result<reqwest::blocking::Client, Error> {
+    let builder: reqwest::blocking::ClientBuilder = reqwest::blocking::Client::builder();
+    let mut headers = get_default_headers();
+    headers.insert("Domain-Name", header::HeaderValue::from_static("campus"));
+    let result: reqwest::blocking::Client = builder
+        .connect_timeout(Duration::new(5, 0))
+        .user_agent(USER_AGENT)
+        .default_headers(headers)
         .build()?;
 
     Ok(result)
