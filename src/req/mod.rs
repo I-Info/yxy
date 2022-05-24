@@ -10,11 +10,16 @@ pub mod auth;
 pub mod login;
 pub mod url;
 
-const USER_AGENT: &'static str = "\
+const APP_VER: &'static str = "410";
+const APP_VER_NAME: &'static str = "4.1.0";
+const USER_AGENT: &'static str = const_format::formatcp!(
+    "\
 Mozilla/5.0 (Linux; Android 11; Android for arm64; wv) \
 AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 \
 Chrome/66.0.3359.158 Mobile Safari/537.36 \
-ZJYXYwebviewbroswer ZJYXYAndroid tourCustomer/yunmaapp.NET/4.1.0/";
+ZJYXYwebviewbroswer ZJYXYAndroid tourCustomer/yunmaapp.NET/{}/",
+    APP_VER_NAME
+);
 
 /// Define default headers.
 fn get_default_headers() -> header::HeaderMap {
@@ -41,24 +46,10 @@ pub fn init_default_client() -> Result<reqwest::blocking::Client, Error> {
     Ok(result)
 }
 
-/// App simulated client
-pub fn init_app_sim_client() -> Result<reqwest::blocking::Client, Error> {
-    let builder: reqwest::blocking::ClientBuilder = reqwest::blocking::Client::builder();
-    let mut headers = get_default_headers();
-    headers.insert("Domain-Name", header::HeaderValue::from_static("campus"));
-    let result: reqwest::blocking::Client = builder
-        .connect_timeout(Duration::new(5, 0))
-        .user_agent(USER_AGENT)
-        .default_headers(headers)
-        .build()?;
-
-    Ok(result)
-}
-
 /// Session handle
 #[derive(Debug)]
 pub struct Handler {
-    pub client: reqwest::blocking::Client,
+    client: reqwest::blocking::Client,
 }
 
 impl Handler {
