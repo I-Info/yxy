@@ -15,7 +15,7 @@ pub const SESSION_KEY: &'static str = "shiroJID";
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AuthResponse {
-    status_code: u32,
+    status_code: i32,
     message: String,
     success: bool,
     data: Option<UserInfo>,

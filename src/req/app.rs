@@ -7,7 +7,7 @@ use crate::error::Error;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryBindResponse {
-    pub status_code: u32,
+    pub status_code: i32,
     pub success: bool,
     pub total: Option<u32>,
     pub message: Option<String>,
@@ -47,7 +47,7 @@ pub struct RoomInfo<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryElResponse {
-    pub status_code: u32,
+    pub status_code: i32,
     pub success: bool,
     pub message: String,
     pub data: Option<ElectricityInfo>,

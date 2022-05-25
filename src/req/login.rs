@@ -15,7 +15,7 @@ use crate::utils::{md5, pkcs7_padding};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BasicResponse<T> {
-    pub status_code: u32,
+    pub status_code: i32,
     pub success: bool,
     pub message: String,
     pub data: Option<T>,
@@ -32,6 +32,48 @@ pub struct LoginHandler {
     pub phone_num: String,
     pub device_id: String,
     client: Client,
+}
+
+/// Login response data definition
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LoginResponse {
+    pub id: String, // UID
+    pub token: String,
+    pub account: String,
+    pub account_encrypt: String,
+    pub mobile_phone: String,
+    pub sex: u8, // 1 as male, 1 as female
+    pub school_code: Option<String>,
+    pub school_name: Option<String>,
+    pub qrcode_pay_type: Option<u8>,
+    pub user_name: Option<String>,
+    pub user_type: Option<String>,
+    pub job_no: Option<String>,
+    pub user_idcard: Option<String>,
+    pub identity_no: Option<String>,
+    pub user_class: Option<String>,
+    pub real_name_status: u8,
+    pub register_time: Option<String>,
+    pub bind_card_status: u8,
+    pub last_login: String,
+    pub head_img: String,
+    pub device_id: String,
+    pub test_account: u8,
+    pub join_newactivity_status: u8,
+    pub is_new: u8,
+    pub create_status: u8,
+    pub eacct_status: u8,
+    pub school_classes: Option<i32>,
+    pub school_nature: Option<i32>,
+    pub platform: String,
+    pub uu_token: String,
+    pub qrcode_private_key: String, // Private key
+    pub bind_card_rate: u8,
+    pub points: i32,
+    pub school_identity_type: Option<u8>,
+    pub alumni_flag: Option<u8>,
+    pub ext_json: Option<String>,
 }
 
 impl LoginHandler {
@@ -133,6 +175,33 @@ impl LoginHandler {
         let user_exists = resp_ser.data.unwrap().user_exists;
 
         Ok(user_exists)
+    }
+
+    pub fn do_login(&self, code: &str) -> Result<LoginResponse, Error> {
+        let mut body = self.get_basic_request_body();
+        body.insert("appPlatform", json!("Android"));
+        body.insert("clientId", json!("65l01gpo3p8v6rk"));
+        body.insert("mobilePhone", json!(self.phone_num));
+        body.insert("oaid", json!(""));
+        body.insert("osType", json!("Android"));
+        body.insert("osUuid", json!(self.device_id));
+        body.insert("osVersion", json!(11u8));
+        body.insert("verificationCode", json!(code));
+
+        let resp = self
+            .client
+            .post(url::app::DO_LOGIN_BY_CODE)
+            .json(&body)
+            .send()?;
+        check_response(&resp)?;
+
+        let resp_ser: BasicResponse<LoginResponse> = resp.json()?;
+        if resp_ser.success == false {
+            return Err(Error::Runtime(format!("Login error: {}", resp_ser.message)));
+        }
+        let result = resp_ser.data.unwrap();
+
+        Ok(result)
     }
 }
 
