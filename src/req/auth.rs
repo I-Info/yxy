@@ -1,7 +1,7 @@
 //! Authorization APIs
 use std::collections::HashMap;
 
-use reqwest::blocking::Client;
+use reqwest::{blocking::Client, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 
 use super::{check_response, url};
@@ -51,7 +51,14 @@ pub struct UserInfo {
 /// If matched, return the code value
 fn extract_code(text: &str) -> Option<String> {
     match text.find("var code = ") {
-        Some(i) => Some(text[i + 12..i + 12 + 32].into()),
+        Some(i) => {
+            let pat = &text[i + 12..i + 12 + 32];
+            if pat.contains("\"") {
+                None
+            } else {
+                Some(pat.into())
+            }
+        }
         None => None,
     }
 }
@@ -73,7 +80,7 @@ pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Error> {
 
     match extract_code(&text) {
         Some(t) => Ok(t),
-        None => Err(Error::EmptyResp),
+        None => Err(Error::Runtime("No OAuth code response".into())),
     }
 }
 
@@ -89,24 +96,27 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Erro
         .send()?;
     check_response(&response)?;
 
-    // get session
-    let session = match response.cookies().find(|x| x.name() == SESSION_KEY) {
-        Some(v) => (v.value().to_string()),
-        None => {
-            return Err(Error::Runtime(
-                "authorize failed: no cookie returned".into(),
-            ))
-        }
-    };
+    let cookies: Vec<Cookie> = response.cookies().collect();
 
-    let resp_ser: AuthResponse = response.json()?;
-    // Set user info
-    if let Some(v) = resp_ser.data {
-        Ok((session, v))
-    } else {
-        return Err(Error::Runtime(format!(
-            "Authorize failed: {}",
-            resp_ser.message
-        )));
+    // get session
+    match cookies.iter().find(|x| x.name() == SESSION_KEY) {
+        Some(v) => {
+            let session = v.value().to_string();
+            let resp_ser: AuthResponse = response.json()?;
+            match resp_ser.data {
+                Some(v) => Ok((session, v)),
+                None => Err(Error::Runtime(format!(
+                    "Authorize failed: {}",
+                    resp_ser.message
+                ))),
+            }
+        }
+        None => {
+            let resp_ser: AuthResponse = response.json()?;
+            Err(Error::Runtime(format!(
+                "Authorize failed: {}",
+                resp_ser.message
+            )))
+        }
     }
 }

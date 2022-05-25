@@ -95,15 +95,16 @@ impl LoginHandler {
         &self,
         security_token: &str,
         captcha: Option<&str>,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         let mut body = self.get_basic_request_body();
         let app_security_token = get_app_security_token(security_token, &self.device_id)?;
         body.insert("appSecurityToken", json!(app_security_token));
         body.insert("securityToken", json!(security_token));
         body.insert("sendCount", json!(1u8));
         body.insert("mobilePhone", json!(self.phone_num));
+        // If image captcha required
         if let Some(v) = captcha {
-            body.insert("imageCaptchaValue", json!(v));
+            body.insert("imageCafptchaValue", json!(v));
         }
 
         let resp = self
@@ -111,10 +112,27 @@ impl LoginHandler {
             .post(url::app::SEND_VERIFICATION_CODE)
             .json(&body)
             .send()?;
+        check_response(&resp)?;
 
-        println!("{}", resp.text()?);
+        /// Define data object
+        #[derive(Debug, Serialize, Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Data {
+            user_exists: bool,
+        }
 
-        Ok(())
+        let resp_ser: BasicResponse<Data> = resp.json()?;
+        if resp_ser.success == false {
+            return Err(Error::Runtime(format!(
+                "Send verification code error: {}",
+                resp_ser.message
+            )));
+        }
+
+        // User status
+        let user_exists = resp_ser.data.unwrap().user_exists;
+
+        Ok(user_exists)
     }
 }
 

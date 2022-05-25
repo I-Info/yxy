@@ -12,10 +12,6 @@ pub struct Options {
     #[clap(subcommand)]
     pub command: Option<Commands>,
 
-    /// Force fresh session cache
-    #[clap(short, long)]
-    pub fresh: bool,
-
     /// Verbose
     #[clap(short, long)]
     pub verbose: bool,
@@ -28,6 +24,7 @@ pub enum Commands {
         /// Selection
         #[clap(arg_enum)]
         query: Query,
+
         /// Argument
         arg: String,
     },
@@ -35,9 +32,11 @@ pub enum Commands {
 
 #[derive(ArgEnum, Clone, Debug)]
 pub enum Query {
-    #[clap(name = "electric")]
-    Electric,
+    /// Query Electricity by UID
+    #[clap(name = "ele")]
+    Electricity,
 
+    /// Query UID by phone number
     #[clap(name = "uid")]
     Uid,
 }

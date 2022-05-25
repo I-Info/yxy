@@ -16,16 +16,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         match v {
             yxy::arg::Commands::Query { query: q, arg: a } => match q {
                 yxy::arg::Query::Uid => {
-                    yxy::query_uid(&a)?;
+                    yxy::query_uid(&a, opts.verbose)?;
                 }
-                _ => {
-                    todo!()
+                yxy::arg::Query::Electricity => {
+                    let result = yxy::query_ele(&a, &None, opts.verbose)?;
+                    println!("Electricity balance: {}", result.soc);
                 }
             },
         }
     } else {
         // Default query electricity
-        let result = yxy::query_ele(conf, opts)?;
+        let result = yxy::query_ele(&conf.uid, &conf.cookie_file, opts.verbose)?;
         println!("Electricity balance: {}", result.soc);
     }
 

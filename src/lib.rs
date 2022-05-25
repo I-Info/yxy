@@ -6,39 +6,33 @@ pub mod utils;
 
 /// Entrance for bin application
 pub fn query_ele(
-    conf: conf::Config,
-    opts: arg::Options,
+    uid: &str,
+    cookie_file: &Option<String>,
+    verbose: bool,
 ) -> Result<req::app::ElectricityInfo, error::Error> {
-    let verbose = opts.verbose;
     // Read the session cache
-    let mut session = match &conf.cookie_file {
+    let mut session = match cookie_file {
         None => None,
-        Some(cookie_file) => {
-            if opts.fresh == false {
-                match std::fs::read_to_string(cookie_file) {
-                    Ok(v) => {
-                        if verbose {
-                            println!("Using cached session id: {}", v);
-                        }
-                        Some(v)
-                    }
-                    Err(e) => {
-                        if verbose {
-                            eprintln!("Session cache file reading error: {}", e);
-                        }
-                        return Err(error::Error::IO(e));
-                    }
+        Some(cookie_file) => match std::fs::read_to_string(cookie_file) {
+            Ok(v) => {
+                if verbose {
+                    println!("Using cached session id: {}", v);
                 }
-            } else {
-                None
+                Some(v)
             }
-        }
+            Err(e) => {
+                if verbose {
+                    eprintln!("Session cache file reading error: {}", e);
+                }
+                return Err(error::Error::IO(e));
+            }
+        },
     };
 
     let mut tried = false;
     loop {
         if session.is_none() {
-            let (ses, _) = start_auth(&conf.uid, &conf.cookie_file, verbose)?;
+            let (ses, _) = start_auth(uid, &cookie_file, verbose)?;
             session.replace(ses);
         }
         match start_app(session.as_ref().unwrap(), verbose) {
@@ -146,12 +140,25 @@ fn start_app(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, 
 }
 
 /// Query UID procedure
-pub fn query_uid(phone_num: &str) -> Result<(), error::Error> {
+pub fn query_uid(phone_num: &str, verbose: bool) -> Result<(), error::Error> {
     let handler = req::login::LoginHandler::new(phone_num.to_string())?;
-    let security_token = handler.get_security_token()?;
-    println!("{:?}", security_token);
-    if security_token.level == 0 {
-        handler.send_verification_code(&security_token.security_token, None)?;
+
+    if verbose {
+        println!("Querying security token...");
+        let security_token = handler.get_security_token()?;
+        println!("Success: {:?}", security_token);
+
+        if security_token.level == 0 {
+            println!("Sending ");
+            let user_exists =
+                handler.send_verification_code(&security_token.security_token, None)?;
+            if user_exists == true {
+                println!("Current user is not exist");
+            }
+        }
+    } else {
+        todo!()
     }
+
     Ok(())
 }
