@@ -43,7 +43,7 @@ pub struct LoginResponse {
     pub account: String,
     pub account_encrypt: String,
     pub mobile_phone: String,
-    pub sex: u8, // 1 as male, 1 as female
+    pub sex: u8, // 1 as male, 0 as female
     pub school_code: Option<String>,
     pub school_name: Option<String>,
     pub qrcode_pay_type: Option<u8>,
@@ -54,7 +54,7 @@ pub struct LoginResponse {
     pub identity_no: Option<String>,
     pub user_class: Option<String>,
     pub real_name_status: u8,
-    pub register_time: Option<String>,
+    pub regiser_time: String, // typo: register time
     pub bind_card_status: u8,
     pub last_login: String,
     pub head_img: String,
