@@ -144,21 +144,29 @@ pub fn query_uid(phone_num: &str, verbose: bool) -> Result<(), error::Error> {
     let handler = req::login::LoginHandler::new(phone_num.to_string())?;
 
     if verbose {
-        println!("Querying security token...");
-        let security_token = handler.get_security_token()?;
-        println!("Success: {:?}", security_token);
-
-        if security_token.level == 0 {
-            println!("Sending ");
-            let user_exists =
-                handler.send_verification_code(&security_token.security_token, None)?;
-            if user_exists == true {
-                println!("Current user is not exist");
-            }
-        }
-    } else {
         todo!()
     }
+
+    println!("Querying security token...");
+    let security_token = handler.get_security_token()?;
+    println!("Success: {:?}", security_token);
+
+    if security_token.level != 0 {
+        // image captcha required
+        todo!()
+    }
+
+    println!("Sending verification code...");
+    let user_exists = handler.send_verification_code(&security_token.security_token, None)?;
+    if user_exists == false {
+        println!("Current user is not registered");
+    }
+
+    // Get code from stdin
+    let mut code = String::new();
+    println!("Send success, please input the code:");
+    std::io::stdin().read_line(&mut code)?;
+    println!("{}", code);
 
     Ok(())
 }
