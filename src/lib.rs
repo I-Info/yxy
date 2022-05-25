@@ -5,7 +5,7 @@ pub mod req;
 pub mod utils;
 
 /// Entrance for bin application
-pub fn run(
+pub fn query_ele(
     conf: conf::Config,
     opts: arg::Options,
 ) -> Result<req::app::ElectricityInfo, error::Error> {
@@ -143,4 +143,15 @@ fn start_app(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, 
 
         Ok(electricity_info)
     }
+}
+
+/// Query UID procedure
+pub fn query_uid(phone_num: &str) -> Result<(), error::Error> {
+    let handler = req::login::LoginHandler::new(phone_num.to_string())?;
+    let security_token = handler.get_security_token()?;
+    println!("{:?}", security_token);
+    if security_token.level == 0 {
+        handler.send_verification_code(&security_token.security_token, None)?;
+    }
+    Ok(())
 }

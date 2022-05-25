@@ -6,6 +6,7 @@ use aes::Aes128;
 
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::{check_response, url, APP_VER_NAME};
 use crate::error::Error;
@@ -54,12 +55,12 @@ impl LoginHandler {
     }
 
     /// Init general request body
-    pub fn get_basic_request_body(&self) -> HashMap<&str, &str> {
+    pub fn get_basic_request_body(&self) -> HashMap<&str, serde_json::Value> {
         let mut result = HashMap::new();
-        result.insert("appVersion", super::APP_VER);
-        result.insert("deviceId", &self.device_id);
-        result.insert("platform", "YUNMA_APP");
-        result.insert("testAccount", "1");
+        result.insert("appVersion", json!(super::APP_VER));
+        result.insert("deviceId", json!(self.device_id));
+        result.insert("platform", json!("YUNMA_APP"));
+        result.insert("testAccount", json!(1u8));
 
         result
     }
@@ -67,7 +68,7 @@ impl LoginHandler {
     /// Return security token & level
     pub fn get_security_token(&self) -> Result<SecurityToken, Error> {
         let mut body = self.get_basic_request_body();
-        body.insert("sceneCode", "app_user_login");
+        body.insert("sceneCode", json!("app_user_login"));
         let resp = self
             .client
             .post(url::app::GET_SECURITY_TOKEN)
@@ -90,7 +91,31 @@ impl LoginHandler {
     }
 
     /// Request to send login verification code sms
-    pub fn send_verification_code(&self) {}
+    pub fn send_verification_code(
+        &self,
+        security_token: &str,
+        captcha: Option<&str>,
+    ) -> Result<(), Error> {
+        let mut body = self.get_basic_request_body();
+        let app_security_token = get_app_security_token(security_token, &self.device_id)?;
+        body.insert("appSecurityToken", json!(app_security_token));
+        body.insert("securityToken", json!(security_token));
+        body.insert("sendCount", json!(1u8));
+        body.insert("mobilePhone", json!(self.phone_num));
+        if let Some(v) = captcha {
+            body.insert("imageCaptchaValue", json!(v));
+        }
+
+        let resp = self
+            .client
+            .post(url::app::SEND_VERIFICATION_CODE)
+            .json(&body)
+            .send()?;
+
+        println!("{}", resp.text()?);
+
+        Ok(())
+    }
 }
 
 /// Init App simulated client
@@ -174,14 +199,6 @@ mod test {
         let device_id = LoginHandler::gen_device_id();
         println!("Device id: {}", device_id);
         println!("UA: {}", format!("{}{}", USER_AGENT, device_id));
-    }
-
-    #[test]
-    fn login() -> Result<(), Error> {
-        let handler = LoginHandler::new("1234567".into())?;
-        println!("{:?}", handler.get_security_token()?);
-
-        Ok(())
     }
 
     #[test]
