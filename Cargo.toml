@@ -14,10 +14,12 @@ rand = "0.8.3"
 base64 = "0.13.0"
 clap = {version ="3.1.18", features = ["derive"] }
 rust-crypto = "^0.2"
+aes = "0.8"
 serde = {version =  "1.0", features = ["derive"]}
 serde_yaml = "0.8"
 serde_json = "1.0"
 const_format = "0.2"
+chrono = "0.4"
 
 [dependencies.uuid]
 version = "1.0.0"

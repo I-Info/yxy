@@ -11,6 +11,9 @@ pub enum Error {
     Rsa(rsa::errors::Error),
     EmptyResp,
     RsaPkcs(rsa::pkcs8::spki::Error),
+    SymmetricCipher(crypto::symmetriccipher::SymmetricCipherError),
+    Decode(std::string::FromUtf8Error),
+    Base64Decode(base64::DecodeError),
 }
 
 impl std::fmt::Display for Error {
@@ -24,6 +27,9 @@ impl std::fmt::Display for Error {
             AuthExpired => write!(f, "Authorization expired"),
             Rsa(e) => write!(f, "RSA crypto error: {}", e),
             RsaPkcs(e) => write!(f, "RSA crypto error: {}", e),
+            SymmetricCipher(e) => write!(f, "Symmetric cipher error: {:?}", e),
+            Decode(e) => write!(f, "Decode error: {}", e),
+            Base64Decode(e) => write!(f, "Decode error: {}", e),
         }
     }
 }
@@ -51,5 +57,23 @@ impl From<rsa::errors::Error> for Error {
 impl From<rsa::pkcs8::spki::Error> for Error {
     fn from(e: rsa::pkcs8::spki::Error) -> Self {
         Self::RsaPkcs(e)
+    }
+}
+
+impl From<crypto::symmetriccipher::SymmetricCipherError> for Error {
+    fn from(e: crypto::symmetriccipher::SymmetricCipherError) -> Self {
+        Self::SymmetricCipher(e)
+    }
+}
+
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(e: std::string::FromUtf8Error) -> Self {
+        Self::Decode(e)
+    }
+}
+
+impl From<base64::DecodeError> for Error {
+    fn from(e: base64::DecodeError) -> Self {
+        Self::Base64Decode(e)
     }
 }

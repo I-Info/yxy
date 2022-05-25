@@ -55,3 +55,29 @@ pub fn file_write(path: &str, s: &str) -> Result<(), Error> {
     f.write(s.as_bytes())?;
     Ok(())
 }
+
+// pub fn encrypt(encryptor: &mut Box<dyn Encryptor>, text: &[u8]) -> Result<Vec<u8>, Error> {
+//     let mut input = RefReadBuffer::new(text);
+//     let mut result = vec![0; text.len() * 4];
+//     let mut output = RefWriteBuffer::new(&mut result);
+//     encryptor.encrypt(&mut input, &mut output, true)?;
+
+//     Ok(result)
+// }
+
+// pub fn decrypt(decryptor: &mut Box<dyn Decryptor>, text: &[u8]) -> Result<Vec<u8>, Error> {
+//     let mut input = RefReadBuffer::new(text);
+//     let mut result = vec![0; text.len()];
+//     let mut output = RefWriteBuffer::new(&mut result);
+//     decryptor.decrypt(&mut input, &mut output, true)?;
+
+//     Ok(result)
+// }
+
+/// PKCS#7 Padding method
+pub fn pkcs7_padding(message: &str, block_size: usize) -> String {
+    let padding_size = block_size - message.len() % block_size;
+    let padding_char = padding_size as u8 as char;
+    let padding: String = (0..padding_size).map(|_| padding_char).collect();
+    format!("{}{}", message, padding)
+}
