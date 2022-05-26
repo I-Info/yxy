@@ -34,4 +34,6 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          path: target/release.tar.gz
+          path: |
+            target/release/yxy 
+            target/release/libyxy.rlib
