@@ -2,23 +2,34 @@ use std::error::Error;
 
 use clap::Parser;
 
+pub mod arg;
+pub mod conf;
+
 fn main() -> Result<(), Box<dyn Error>> {
-    let opts = yxy::arg::Options::parse();
+    let opts = arg::Options::parse();
 
     let conf_path = match &opts.config {
         Some(c) => c,
         None => "./conf.yaml",
     };
 
-    let conf = yxy::conf::Config::parse(&conf_path)?;
+    let conf = match conf::Config::parse(&conf_path) {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(Box::new(yxy::error::Error::Runtime(format!(
+                "Read/Parse conf.yaml file error: {}",
+                e
+            ))));
+        }
+    };
 
     if let Some(v) = opts.command {
         match v {
-            yxy::arg::Commands::Query { query: q, arg: a } => match q {
-                yxy::arg::Query::Uid => {
+            arg::Commands::Query { query: q, arg: a } => match q {
+                arg::Query::Uid => {
                     query_uid(&a, opts.verbose)?;
                 }
-                yxy::arg::Query::Electricity => {
+                arg::Query::Electricity => {
                     let result = yxy::query_ele(&a, &None, opts.verbose)?;
                     println!("Electricity balance: {}", result.soc);
                 }
