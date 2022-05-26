@@ -10,26 +10,23 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  x86_linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: ["x86_64-unknown-linux-musl"]
 
     steps:
       - uses: actions/checkout@v3
 
+      # - name: Install target support
+      #   run: rustup target add ${{matrix.platform}}
+
       - name: List support target platform
         run: rustup target list
 
-      - name: Install cross
-        run: cargo install cross
-
       - name: Build
-        run: cross build -vr --target ${{matrix.platform}}
+        run: cargo build -vr
 
       - name: Run tests
-        run: cross test -vr --target ${{matrix.platform}}
+        run: cargo test -vr
 
       - name: List target
         run: ls -llh target
@@ -37,5 +34,5 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: ${{matrix.platform}}
+          name: x86_linux
           path: target/
