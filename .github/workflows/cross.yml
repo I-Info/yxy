@@ -23,7 +23,7 @@ jobs:
         run: rustup target list
 
       - name: Install cross
-        run: crago install cross
+        run: cargo install cross
 
       - name: Build
         run: cross build -vr --target ${{matrix.platform}}
