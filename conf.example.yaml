@@ -1,2 +1,2 @@
 uid: "123456"
-cookie_file: "./cookie.tmp"
+cookie_file: "./cookie.tmp" # Optional
