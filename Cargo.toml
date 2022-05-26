@@ -1,24 +1,31 @@
 [package]
 name = "yxy"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["IInfo <info@i1nfo.com>"]
 description = "YXY platform spider"
 
 [dependencies]
-reqwest = { version = "0.11", features = ["blocking","json","cookies"] }
 rsa = {version = "0.6.1"}
 rand = "0.8.3"
 base64 = "0.13.0"
-clap = {version ="3.1.18", features = ["derive"] }
+clap = {version = "3.1.18", features = ["derive"]}
 rust-crypto = "^0.2"
 aes = "0.8"
-serde = {version =  "1.0", features = ["derive"]}
+serde = {version = "1.0", features = ["derive"]}
 serde_yaml = "0.8"
 serde_json = "1.0"
 const_format = "0.2"
 chrono = "0.4"
+
+[dependencies.reqwest]
+version = "0.11"
+features = [
+    "blocking",
+    "json",
+    "cookies",
+]
 
 [dependencies.uuid]
 version = "1.1.0"
