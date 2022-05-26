@@ -31,6 +31,8 @@ jobs:
       - name: List support target platform
         run: rustup target list
 
+      - uses: Swatinem/rust-cache@v1
+
       - name: Build
         run: cargo build -vr
 
@@ -62,10 +64,17 @@ jobs:
         run: ls -R
         working-directory: ./artifacts
 
+      - name: Extract bin files
+        run: |
+          mkdir dist
+          cp artifacts/x86_64-apple-darwin/yxy dist/yxy_x86_64-apple-darwin
+          cp artifacts/x86_64-pc-windows-msvc/yxy.exe dist/yxy_x86_64-pc-windows-msvc.exe
+          cp artifacts/x86_64-unknown-linux-gnu/yxy dist/yxy_x86_64-unknown-linux-gnu
+
       - name: Publish release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            artifacts/*
+            dist/*
