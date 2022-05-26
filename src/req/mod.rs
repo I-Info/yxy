@@ -8,6 +8,7 @@ use crate::error::Error;
 pub mod app;
 pub mod auth;
 pub mod login;
+pub mod notice;
 pub mod url;
 
 const APP_VER: &'static str = "410";

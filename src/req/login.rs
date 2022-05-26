@@ -1,4 +1,4 @@
-/// Simulate app login requests
+//! Simulate app login requests
 use std::collections::HashMap;
 
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};

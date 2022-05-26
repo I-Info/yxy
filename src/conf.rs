@@ -1,11 +1,20 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::error::Error;
 
 /// Configuration file
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub uid: String,
     pub cookie_file: Option<String>,
+    pub server_chan: Option<ServerChan>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ServerChan {
+    pub key: String,
+    pub title: String,
+    pub warning_threshold: f32,
+    pub warning_title: String,
 }
 
 impl Config {

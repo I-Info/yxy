@@ -38,3 +38,5 @@ pub mod app {
     pub const DO_LOGIN_BY_CODE: &'static str =
         concatcp!(BASE_URL, "/login/doLoginByVerificationCode");
 }
+
+pub const SERVER_CHAN: &'static str = "https://sctapi.ftqq.com/";

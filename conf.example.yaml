@@ -1,2 +1,7 @@
 uid: "123456"
 cookie_file: "./cookie.tmp" # Optional
+server_chan:
+  key: key123123
+  title: "Electricity Surplus: " # fmt({title}{surplus})
+  warning_threshold: 10.0
+  warning_title: "Waring: " # fmt({warning_title}{surplus})

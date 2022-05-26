@@ -7,9 +7,9 @@ YXY(YSchool) platform spider library, written in rust.
 ## WIP
 - [x] Query electricity balance.
 - [x] Simulate APP login.
-- [ ] Subscribe some balance status.
-  - Email
-  - WeChat
+- [x] Subscribe some balance status.
+  - Email ❌
+  - WeChat(ServerChan) ✅
 - [ ] Automatic electricity bill payment.
 - [ ] More query or features...
 

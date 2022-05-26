@@ -31,17 +31,90 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 arg::Query::Electricity => {
                     let result = yxy::query_ele(&a, &None, opts.verbose)?;
-                    println!("Electricity balance: {}", result.soc);
+                    print_ele(&result);
                 }
             },
         }
     } else {
         // Default query electricity
         let result = yxy::query_ele(&conf.uid, &conf.cookie_file, opts.verbose)?;
-        println!("Electricity balance: {}", result.soc);
+        print_ele(&result);
+
+        // Message push service
+        if let Some(sc) = conf.server_chan {
+            println!("Pushing message to ServerChan channel...");
+            if result.soc > sc.warning_threshold {
+                yxy::req::notice::push_message(
+                    &sc.key,
+                    &format!("{}{}", &sc.title, &result.soc),
+                    &fmt_ele_md(&result),
+                )?;
+            } else {
+                yxy::req::notice::push_message(
+                    &sc.key,
+                    &format!("{}{}", &sc.warning_title, &result.soc),
+                    &fmt_ele_md(&result),
+                )?;
+            }
+            println!("Success.")
+        }
     }
 
     Ok(())
+}
+
+/// fmt & print electricity info
+pub fn print_ele(info: &yxy::req::app::ElectricityInfo) {
+    let surplus = &info.surplus_list[0];
+    println!(
+        "\
+Electricity Info: 
+-----------------
+Room: {}
+Status: {}
+
+Total Surplus: {} kW·h
+Total Amount: ￥{}
+
+Basic: {} kW·h | ￥{}
+Subsidy : {} kW·h | ￥{}
+",
+        info.display_room_name,
+        surplus.room_status,
+        info.soc,
+        info.total_soc_amount,
+        surplus.surplus,
+        surplus.amount,
+        surplus.subsidy,
+        surplus.subsidy_amount,
+    );
+}
+
+/// fmt electricity info in markdown style
+pub fn fmt_ele_md(info: &yxy::req::app::ElectricityInfo) -> String {
+    let surplus = &info.surplus_list[0];
+    format!(
+        "\
+# Electricity Info
+-----------------
+- Room: **{}**
+- Status: **{}**
+
+- Total Surplus: **{}** kW·h
+- Total Amount: **￥{}**
+
+- Basic: **{}** kW·h | **￥{}**
+- Subsidy : **{}** kW·h | **￥{}**
+",
+        info.display_room_name,
+        surplus.room_status,
+        info.soc,
+        info.total_soc_amount,
+        surplus.surplus,
+        surplus.amount,
+        surplus.subsidy,
+        surplus.subsidy_amount,
+    )
 }
 
 /// Query UID procedure
