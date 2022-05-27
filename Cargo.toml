@@ -5,6 +5,9 @@ edition = "2021"
 license = "Apache-2.0"
 authors = ["IInfo <info@i1nfo.com>"]
 description = "YXY platform spider"
+keywords = ["yxy","yixiaoyuan", "spider"]
+repository = "https://github.com/I-Info/yxy"
+readme = "README.md"
 
 [dependencies]
 rsa = {version = "0.6.1"}
