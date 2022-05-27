@@ -12,6 +12,10 @@ pub struct Options {
     #[clap(subcommand)]
     pub command: Option<Commands>,
 
+    /// Notify by message push service
+    #[clap(short, long)]
+    pub notify: bool,
+
     /// Verbose
     #[clap(short, long)]
     pub verbose: bool,

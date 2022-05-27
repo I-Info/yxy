@@ -5,3 +5,4 @@ server_chan:
   title: "Electricity Surplus: " # fmt({title}{surplus})
   warning_threshold: 10.0
   warning_title: "Waring: " # fmt({warning_title}{surplus})
+  log_level: 0 # Warning: 1

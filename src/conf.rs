@@ -15,6 +15,7 @@ pub struct ServerChan {
     pub title: String,
     pub warning_threshold: f32,
     pub warning_title: String,
+    pub log_level: u8,
 }
 
 impl Config {

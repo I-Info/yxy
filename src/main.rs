@@ -38,25 +38,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         // Default query electricity
         let result = yxy::query_ele(&conf.uid, &conf.cookie_file, opts.verbose)?;
-        print_ele(&result);
 
-        // Message push service
-        if let Some(sc) = conf.server_chan {
-            println!("Pushing message to ServerChan channel...");
-            if result.soc > sc.warning_threshold {
-                yxy::req::notice::push_message(
-                    &sc.key,
-                    &format!("{}{}", &sc.title, &result.soc),
-                    &fmt_ele_md(&result),
-                )?;
+        if opts.notify {
+            // Message push service
+            if let Some(sc) = conf.server_chan {
+                println!("Pushing message to ServerChan channel...");
+                if result.soc < sc.warning_threshold {
+                    yxy::req::notice::push_message(
+                        &sc.key,
+                        &format!("{}{}", &sc.warning_title, &result.soc),
+                        &fmt_ele_md(&result),
+                    )?;
+                } else if sc.log_level == 0 {
+                    yxy::req::notice::push_message(
+                        &sc.key,
+                        &format!("{}{}", &sc.title, &result.soc),
+                        &fmt_ele_md(&result),
+                    )?;
+                } else {
+                    println!("Nothing to do.");
+                }
+                println!("Success.")
             } else {
-                yxy::req::notice::push_message(
-                    &sc.key,
-                    &format!("{}{}", &sc.warning_title, &result.soc),
-                    &fmt_ele_md(&result),
-                )?;
+                eprintln!("No message push config found");
             }
-            println!("Success.")
+        } else {
+            print_ele(&result);
         }
     }
 
