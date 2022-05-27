@@ -8,6 +8,9 @@ description = "YXY platform spider"
 keywords = ["yxy","yixiaoyuan", "spider"]
 repository = "https://github.com/I-Info/yxy"
 readme = "README.md"
+exclude = [
+    ".github/*",
+]
 
 [dependencies]
 rsa = {version = "0.6.1"}
