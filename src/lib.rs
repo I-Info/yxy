@@ -2,35 +2,16 @@ pub mod error;
 pub mod req;
 pub mod utils;
 
-/// Entrance for bin application
+/// Procedure of query electricity
 pub fn query_ele(
     uid: &str,
-    cookie_file: &Option<String>,
+    mut session: Option<String>,
     verbose: bool,
-) -> Result<req::app::ElectricityInfo, error::Error> {
-    // Read the session cache
-    let mut session = match cookie_file {
-        None => None,
-        Some(cookie_file) => match std::fs::read_to_string(cookie_file) {
-            Ok(v) => {
-                if verbose {
-                    println!("Using cached session id: {}", v);
-                }
-                Some(v)
-            }
-            Err(e) => {
-                if verbose {
-                    eprintln!("Session cache file reading error: {}", e);
-                }
-                return Err(error::Error::IO(e));
-            }
-        },
-    };
-
+) -> Result<(req::app::ElectricityInfo, Option<String>), error::Error> {
     let mut tried = false;
     loop {
         if session.is_none() {
-            let (ses, _) = start_auth(uid, &cookie_file, verbose)?;
+            let (ses, _) = start_auth(uid, verbose)?;
             session.replace(ses);
         }
         match start_app(session.as_ref().unwrap(), verbose) {
@@ -53,18 +34,14 @@ pub fn query_ele(
                 tried = true;
             }
             Ok(v) => {
-                return Ok(v);
+                return Ok((v, session));
             }
         }
     }
 }
 
-/// Authorization procedure
-fn start_auth(
-    id: &str,
-    path: &Option<String>,
-    verbose: bool,
-) -> Result<(String, req::auth::UserInfo), error::Error> {
+/// Authorization sub-procedure
+fn start_auth(id: &str, verbose: bool) -> Result<(String, req::auth::UserInfo), error::Error> {
     let client = req::init_default_client()?;
 
     if verbose {
@@ -72,33 +49,21 @@ fn start_auth(
         let oauth_code = req::auth::get_oauth_code(&client, id)?;
         println!("OAuth Code: {}", oauth_code);
 
-        println!("Trying to login...");
+        println!("Trying to auth...");
         let (ses, user) = req::auth::authorize(&client, &oauth_code)?;
         println!("Authorized, the session id is: {}", ses);
-        // Cache the session
-        if let Some(cookie_file) = path {
-            if let Err(e) = utils::file_write(cookie_file, &ses) {
-                eprintln!("Fail to cache the session id: {}", e);
-            } else {
-                println!("Session cached.")
-            }
-        }
 
         Ok((ses, user))
     } else {
         let oauth_code = req::auth::get_oauth_code(&client, id)?;
 
         let (ses, user) = req::auth::authorize(&client, &oauth_code)?;
-        // Cache the session
-        if let Some(cookie_file) = path {
-            utils::file_write(cookie_file, &ses)?;
-        }
 
         Ok((ses, user))
     }
 }
 
-/// App procedure
+/// Application sub-procedure
 fn start_app(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, error::Error> {
     // Init authorized handler
     let handler = req::Handler::new(session)?;

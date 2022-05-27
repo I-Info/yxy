@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 
 use reqwest::{blocking::Client, cookie::Cookie};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use super::{check_response, url};
 use crate::error::Error;
@@ -12,17 +12,17 @@ const APPID: &'static str = "1810181825222034";
 pub const SESSION_KEY: &'static str = "shiroJID";
 
 /// Authorize API response definition
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AuthResponse {
-    status_code: i32,
+    // status_code: i32,
     message: String,
     success: bool,
     data: Option<UserInfo>,
 }
 
 /// User info provided by platform
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     pub id: String,
@@ -103,6 +103,12 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Erro
         Some(v) => {
             let session = v.value().to_string();
             let resp_ser: AuthResponse = response.json()?;
+            if resp_ser.success == false {
+                return Err(Error::Runtime(format!(
+                    "Authorize failed: {}",
+                    resp_ser.message
+                )));
+            }
             match resp_ser.data {
                 Some(v) => Ok((session, v)),
                 None => Err(Error::Runtime(format!(

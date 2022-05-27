@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::{check_response, url, Handler};
 use crate::error::Error;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryBindResponse {
     pub status_code: i32,
@@ -14,7 +14,7 @@ pub struct QueryBindResponse {
     pub rows: Option<Vec<BindInfo>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BindInfo {
     pub id: String,
@@ -35,7 +35,7 @@ pub struct BindInfo {
     pub is_allow_change: u8,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomInfo<'a> {
     pub area_id: &'a str,
@@ -44,7 +44,7 @@ pub struct RoomInfo<'a> {
     pub room_code: &'a str,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryElResponse {
     pub status_code: i32,
@@ -53,7 +53,7 @@ pub struct QueryElResponse {
     pub data: Option<ElectricityInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElectricityInfo {
     pub school_code: String,
@@ -73,7 +73,7 @@ pub struct ElectricityInfo {
     pub top_up_type_list: Vec<ElTopUpType>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElSurplus {
     pub surplus: f32,
@@ -86,7 +86,7 @@ pub struct ElSurplus {
     pub room_status: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElTopUpType {
     pub mdname: String,

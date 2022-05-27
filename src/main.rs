@@ -1,9 +1,8 @@
+use clap::Parser;
 use std::error::Error;
 
-use clap::Parser;
-
-pub mod arg;
-pub mod conf;
+mod arg;
+mod conf;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let opts = arg::Options::parse();
@@ -23,6 +22,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    // Read the session cache
+    let session = match &conf.cookie_file {
+        None => None,
+        Some(cookie_file) => match std::fs::read_to_string(cookie_file) {
+            Ok(v) => {
+                if opts.verbose {
+                    println!("Using cached session id: {}", v);
+                }
+                Some(v)
+            }
+            Err(e) => {
+                eprintln!("Session cache file reading error: {}", e);
+                None
+            }
+        },
+    };
+
     if let Some(v) = opts.command {
         match v {
             arg::Commands::Query { query: q, arg: a } => match q {
@@ -30,15 +46,25 @@ fn main() -> Result<(), Box<dyn Error>> {
                     query_uid(&a, opts.verbose)?;
                 }
                 arg::Query::Electricity => {
-                    let result = yxy::query_ele(&a, &None, opts.verbose)?;
+                    let (result, _session) = yxy::query_ele(&a, None, opts.verbose)?;
                     print_ele(&result);
                 }
             },
         }
     } else {
         // Default query electricity
-        let result = yxy::query_ele(&conf.uid, &conf.cookie_file, opts.verbose)?;
+        let (result, session) = yxy::query_ele(&conf.uid, session, opts.verbose)?;
 
+        // Cache the session
+        if let Some(cookie_file) = &conf.cookie_file {
+            if let Err(e) = yxy::utils::file_write(&cookie_file, &session.unwrap()) {
+                eprintln!("Fail to cache the session id: {}", e);
+            } else if opts.verbose {
+                println!("Session cached.")
+            }
+        }
+
+        // Notification
         if opts.notify {
             // Message push service
             if let Some(sc) = conf.server_chan {
@@ -71,10 +97,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// fmt & print electricity info
-pub fn print_ele(info: &yxy::req::app::ElectricityInfo) {
+fn print_ele(info: &yxy::req::app::ElectricityInfo) {
     let surplus = &info.surplus_list[0];
     println!(
-        "\
+        "
 Electricity Info: 
 -----------------
 Room: {}
@@ -125,7 +151,7 @@ pub fn fmt_ele_md(info: &yxy::req::app::ElectricityInfo) -> String {
 }
 
 /// Query UID procedure
-pub fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
+fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
     let handler = yxy::req::login::LoginHandler::new(phone_num.to_string())?;
 
     println!("Querying security token...");

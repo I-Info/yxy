@@ -5,14 +5,14 @@ use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyIn
 use aes::Aes128;
 
 use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 
 use super::{check_response, url, APP_VER_NAME};
 use crate::error::Error;
 use crate::utils::{md5, pkcs7_padding};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BasicResponse<T> {
     pub status_code: i32,
@@ -21,21 +21,15 @@ pub struct BasicResponse<T> {
     pub data: Option<T>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SecurityToken {
     pub level: u8,
     pub security_token: String,
 }
 
-pub struct LoginHandler {
-    pub phone_num: String,
-    pub device_id: String,
-    client: Client,
-}
-
 /// Login response data definition
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginResponse {
     pub id: String, // UID
@@ -74,6 +68,12 @@ pub struct LoginResponse {
     pub school_identity_type: Option<u8>,
     pub alumni_flag: Option<u8>,
     pub ext_json: Option<String>,
+}
+
+pub struct LoginHandler {
+    pub phone_num: String,
+    pub device_id: String,
+    client: Client,
 }
 
 impl LoginHandler {
@@ -157,7 +157,7 @@ impl LoginHandler {
         check_response(&resp)?;
 
         /// Define data object
-        #[derive(Debug, Serialize, Deserialize)]
+        #[derive(Debug, Deserialize)]
         #[serde(rename_all = "camelCase")]
         struct Data {
             user_exists: bool,
@@ -279,14 +279,6 @@ pub fn get_app_security_token(security_token: &str, device_id: &str) -> Result<S
 mod test {
     use super::*;
     use crate::error::Error;
-    use crate::req::*;
-
-    #[test]
-    fn user_agent() {
-        let device_id = LoginHandler::gen_device_id();
-        println!("Device id: {}", device_id);
-        println!("UA: {}", format!("{}{}", USER_AGENT, device_id));
-    }
 
     #[test]
     fn app_security_token() -> Result<(), Error> {
@@ -295,6 +287,7 @@ mod test {
             "12345678",
         )?;
         println!("Ok final: {}", result);
+        assert_eq!("RxTdUD90Eg91tGZHyhTKwjX9v3fH8WWGgQ3vQ5CuiC", &result[..42]);
 
         Ok(())
     }
