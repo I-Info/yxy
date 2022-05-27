@@ -49,37 +49,37 @@ jobs:
           path: |
             target/release/*yxy*
 
-  aarch64-macos:
-    runs-on: "macos-latest"
-    steps:
-      - uses: actions/checkout@v3
+  # aarch64-macos:
+  #   runs-on: "macos-latest"
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Install ARM target
-        run: rustup update && rustup target add aarch64-apple-darwin
+  #     - name: Install ARM target
+  #       run: rustup update && rustup target add aarch64-apple-darwin
 
-      - name: List support target platform
-        run: rustup target list
+  #     - name: List support target platform
+  #       run: rustup target list
 
-      - uses: Swatinem/rust-cache@v1
+  #     - uses: Swatinem/rust-cache@v1
 
-      - name: Build
-        run: cargo build -vr --target=aarch64-apple-darwin
+  #     - name: Build
+  #       run: cargo build -vr --target=aarch64-apple-darwin
 
-      - name: Run tests
-        run: cargo test -vr --target=aarch64-apple-darwin
+  #     - name: Run tests
+  #       run: cargo test -vr --target=aarch64-apple-darwin
 
-      - name: List target
-        run: ls -l target/aarch64-apple-darwin
+  #     - name: List target
+  #       run: ls -l target/aarch64-apple-darwin
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: aarch64-apple-darwin
-          path: |
-            target/aarch64-apple-darwin/*yxy*
+  #     - name: Upload build artifact
+  #       uses: actions/upload-artifact@v3.1.0
+  #       with:
+  #         name: aarch64-apple-darwin
+  #         path: |
+  #           target/aarch64-apple-darwin/*yxy*
 
   publish:
-    needs: [build, aarch64-macos]
+    needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
@@ -99,7 +99,7 @@ jobs:
           cp artifacts/x86_64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-apple-darwin
           cp artifacts/x86_64-pc-windows-msvc/yxy.exe dist/yxy-${GITHUB_REF##*/}-x86_64-pc-windows-msvc.exe
           cp artifacts/x86_64-unknown-linux-gnu/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-unknown-linux-gnu
-          cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
+        # cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
 
       - name: Publish release
         uses: "marvinpinto/action-automatic-releases@latest"
