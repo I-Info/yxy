@@ -1,6 +1,8 @@
 # YXY
-YXY(YSchool) platform spider library, written in rust.
+YXY(易校园) 平台爬虫库，使用 rust 开发。
+> 👏🏻欢迎对本仓库提供宝贵的贡献，比如通过 Issue 和 PR。
 
+[![crates.io](https://img.shields.io/crates/v/yxy.svg)](https://crates.io/crates/yxy)
 [![CI](https://github.com/I-Info/yxy/actions/workflows/ci.yml/badge.svg)](https://github.com/I-Info/yxy/actions/workflows/ci.yml)
 
 ## 如何运行
