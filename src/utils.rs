@@ -1,5 +1,4 @@
 use base64;
-use crypto::{digest::Digest, md5};
 use rsa::{pkcs8::DecodePublicKey, PaddingScheme, PublicKey, RsaPublicKey};
 use std::io::Write;
 
@@ -21,12 +20,10 @@ pub fn parse_public_key_pem(raw: &str) -> String {
     result
 }
 
-/// Return MD5 Hex string
+// Return MD5 Hex string
 pub fn md5<T: Into<String>>(input: T) -> String {
-    let mut md5 = md5::Md5::new();
-    md5.input_str(&input.into());
-
-    md5.result_str()
+    let md5 = md5::compute(input.into());
+    format!("{:x}", md5)
 }
 
 /// Encrypt password by `PKCS1v15(MD5(<password>))`
@@ -62,4 +59,17 @@ pub fn pkcs7_padding(message: &str, block_size: usize) -> String {
     let padding_char = padding_size as u8 as char;
     let padding: String = (0..padding_size).map(|_| padding_char).collect();
     format!("{}{}", message, padding)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_md5() {
+        assert_eq!(
+            md5("abcdefghijklmnopqrstuvwxyz"),
+            "c3fcd3d76192e4007dfb496cca67e13b"
+        )
+    }
 }
