@@ -163,8 +163,8 @@ fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
     }
 
     if security_token.level != 0 {
-        // image captcha required
-        todo!()
+        // image captcha required, but not implemented yet
+        todo!("Image captcha is required. But this is not serious, try to rerun the program.");
     }
 
     println!("Sending verification code...");
@@ -220,10 +220,10 @@ fn query_ele(
     let mut tried = false;
     loop {
         if session.is_none() {
-            let (ses, _) = start_auth(uid, verbose)?;
+            let (ses, _) = app_auth(uid, verbose)?;
             session.replace(ses);
         }
-        match start_app(session.as_ref().unwrap(), verbose) {
+        match app_query_ele(session.as_ref().unwrap(), verbose) {
             Err(e) => {
                 // Handle errors
                 match e {
@@ -250,7 +250,7 @@ fn query_ele(
 }
 
 /// Authorization sub-procedure
-fn start_auth(id: &str, verbose: bool) -> Result<(String, req::auth::UserInfo), error::Error> {
+fn app_auth(id: &str, verbose: bool) -> Result<(String, req::auth::UserInfo), error::Error> {
     let client = req::init_default_client()?;
 
     if verbose {
@@ -273,7 +273,7 @@ fn start_auth(id: &str, verbose: bool) -> Result<(String, req::auth::UserInfo), 
 }
 
 /// Application sub-procedure
-fn start_app(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, error::Error> {
+fn app_query_ele(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, error::Error> {
     // Init authorized handler
     let handler = req::Handler::new(session)?;
 

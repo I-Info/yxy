@@ -5,7 +5,6 @@ use std::io::Write;
 use crate::error::Error;
 
 /// Parse unformatted pure Base64 public key to PEM format
-///
 pub fn parse_public_key_pem(raw: &str) -> String {
     let bytes = raw.as_bytes();
     let mut result = String::from("-----BEGIN PUBLIC KEY-----\n");
@@ -20,7 +19,7 @@ pub fn parse_public_key_pem(raw: &str) -> String {
     result
 }
 
-// Return MD5 Hex string
+/// Return MD5 Hex string
 pub fn md5<T: Into<String>>(input: T) -> String {
     let md5 = md5::compute(input.into());
     format!("{:x}", md5)
