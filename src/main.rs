@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::error::Error;
 
+use yxy::*;
+
 mod arg;
 mod conf;
 
@@ -46,14 +48,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                     query_uid(&a, opts.verbose)?;
                 }
                 arg::Query::Electricity => {
-                    let (result, _session) = yxy::query_ele(&a, None, opts.verbose)?;
+                    let (result, _session) = query_ele(&a, None, opts.verbose)?;
                     print_ele(&result);
                 }
             },
         }
     } else {
         // Default query electricity
-        let (result, session) = yxy::query_ele(&conf.uid, session, opts.verbose)?;
+        let (result, session) = query_ele(&conf.uid, session, opts.verbose)?;
 
         // Cache the session
         if let Some(cookie_file) = &conf.cookie_file {
@@ -207,4 +209,104 @@ fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
     );
 
     Ok(())
+}
+
+/// Procedure of query electricity
+fn query_ele(
+    uid: &str,
+    mut session: Option<String>,
+    verbose: bool,
+) -> Result<(req::app::ElectricityInfo, Option<String>), error::Error> {
+    let mut tried = false;
+    loop {
+        if session.is_none() {
+            let (ses, _) = start_auth(uid, verbose)?;
+            session.replace(ses);
+        }
+        match start_app(session.as_ref().unwrap(), verbose) {
+            Err(e) => {
+                // Handle errors
+                match e {
+                    error::Error::AuthExpired => {
+                        if tried {
+                            return Err(error::Error::Auth(
+                                "Maximum auth retry number reached.".into(),
+                            ));
+                        }
+                        session.take();
+                        if verbose {
+                            eprintln!("Auth may expired, trying to reauthorize.")
+                        }
+                    }
+                    _ => return Err(e),
+                }
+                tried = true;
+            }
+            Ok(v) => {
+                return Ok((v, session));
+            }
+        }
+    }
+}
+
+/// Authorization sub-procedure
+fn start_auth(id: &str, verbose: bool) -> Result<(String, req::auth::UserInfo), error::Error> {
+    let client = req::init_default_client()?;
+
+    if verbose {
+        println!("Trying to get oauth code...");
+        let oauth_code = req::auth::get_oauth_code(&client, id)?;
+        println!("OAuth Code: {}", oauth_code);
+
+        println!("Trying to auth...");
+        let (ses, user) = req::auth::authorize(&client, &oauth_code)?;
+        println!("Authorized, the session id is: {}", ses);
+
+        Ok((ses, user))
+    } else {
+        let oauth_code = req::auth::get_oauth_code(&client, id)?;
+
+        let (ses, user) = req::auth::authorize(&client, &oauth_code)?;
+
+        Ok((ses, user))
+    }
+}
+
+/// Application sub-procedure
+fn start_app(session: &str, verbose: bool) -> Result<req::app::ElectricityInfo, error::Error> {
+    // Init authorized handler
+    let handler = req::Handler::new(session)?;
+
+    // Query Bind Info
+    if verbose {
+        println!("Querying bind info...");
+        let bind_info = handler.query_bind()?;
+        println!("Bind info: {:?}", bind_info);
+
+        // Query Electricity Info
+        println!("Query electricity info...");
+        let room_info = req::app::RoomInfo {
+            area_id: &bind_info.area_id,
+            building_code: &bind_info.building_code,
+            floor_code: &bind_info.floor_code,
+            room_code: &bind_info.room_code,
+        };
+        let electricity_info = handler.query_electricity(room_info)?;
+        println!("Electricity info: {:?}", electricity_info);
+
+        Ok(electricity_info)
+    } else {
+        let bind_info = handler.query_bind()?;
+
+        // Query Electricity Info
+        let room_info = req::app::RoomInfo {
+            area_id: &bind_info.area_id,
+            building_code: &bind_info.building_code,
+            floor_code: &bind_info.floor_code,
+            room_code: &bind_info.room_code,
+        };
+        let electricity_info = handler.query_electricity(room_info)?;
+
+        Ok(electricity_info)
+    }
 }
