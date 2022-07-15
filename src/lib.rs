@@ -1,6 +1,7 @@
 //! YXY Spider Library
 
 pub mod error;
+mod ffi;
 pub mod req;
 pub mod utils;
 
@@ -19,12 +20,6 @@ pub fn auth(uid: &str) -> Result<(String, req::auth::UserInfo), error::Error> {
 
     Ok((ses, user))
 }
-
-// #[no_mangle]
-// pub extern "C" fn c_auth() {
-//     let _ = auth("123");
-//     let _ = query_ele("session");
-// }
 
 /// Query electricity
 pub fn query_ele(session: &str) -> Result<req::app::ElectricityInfo, error::Error> {
