@@ -1,7 +1,7 @@
 //! YXY Spider Library
 
 pub mod error;
-mod ffi;
+pub mod ffi;
 pub mod req;
 pub mod utils;
 

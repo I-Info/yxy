@@ -2,12 +2,30 @@
 
 use std::os::raw::*;
 
-/// Auth ABI
+/// Auth C ABI
+///
+/// # Usage
+/// ```C
+/// uintptr_t auth(const char *uid_p, uintptr_t uid_len, char *session_p, uintptr_t *session_len);
+///
+/// int main() {
+///  char *session_p = malloc(40);
+///  uintptr_t session_len = 40;
+///  uintptr_t result = auth("2010000000000000000", 19, session_p, &session_len);
+///  if (result == 0) {
+///     session_p[session_len] = '\0';
+///     printf("session: %s\nlen: %ld\n", session_p, session_len);
+///   } else {
+///     printf("error: %ld\n", result);
+///   }
+/// }
+/// ```
+///
 #[no_mangle]
-extern "C" fn auth(
-    uid_p: *const c_uchar,
+pub extern "C" fn auth(
+    uid_p: *const c_char,
     uid_len: usize,
-    session_p: *mut c_uchar,
+    session_p: *mut c_char,
     session_len: *mut usize,
 ) -> usize {
     assert!(!uid_p.is_null());
@@ -15,7 +33,7 @@ extern "C" fn auth(
     let uid;
 
     unsafe {
-        let uid_raw = std::slice::from_raw_parts(uid_p, uid_len);
+        let uid_raw = std::slice::from_raw_parts(uid_p as *const u8, uid_len);
         uid = std::str::from_utf8_unchecked(uid_raw);
     }
 
@@ -36,7 +54,7 @@ extern "C" fn auth(
         }
 
         // Copy result to the buffer
-        let session = std::slice::from_raw_parts_mut(session_p, *session_len);
+        let session = std::slice::from_raw_parts_mut(session_p as *mut u8, *session_len);
         session[..ses.as_bytes().len()].copy_from_slice(ses.as_bytes());
 
         // Return the number of elements
