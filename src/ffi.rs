@@ -111,6 +111,7 @@ pub struct ele_info {
 ///    free_ele_info(e);
 /// }
 /// ```
+///
 #[no_mangle]
 pub extern "C" fn query_ele(session_p: *const c_char, session_len: usize) -> *mut ele_info {
     assert!(!session_p.is_null());
