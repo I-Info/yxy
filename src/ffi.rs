@@ -3,7 +3,21 @@
 use std::os::raw::*;
 
 /// Auth C ABI
-///
+/// ----------
+/// # Parameters
+/// - `uid_p: *const c_char`: uid string
+/// - `uid_len: usize`: uid string length
+/// - `session_p: *mut c_char`: preallocated session string buffer
+/// - `session_len: usize`: session string buffer capacity
+/// # Returns
+/// ## Session
+/// - `session_p: *mut c_char`: session string
+/// - `session_len: usize`: session string length
+/// ## Status codes
+/// - `0`: success
+/// - `11`: auth error, maybe uid is invalid
+/// - `12`: other error during auth
+/// - `2`: buffer is too small
 /// # Usage
 /// ```C
 /// uintptr_t auth(const char *uid_p, uintptr_t uid_len, char *session_p, uintptr_t *session_len);
@@ -39,9 +53,14 @@ pub extern "C" fn auth(
 
     let (ses, _) = match crate::auth(uid) {
         Ok((ses, user)) => (ses, user),
-        Err(_) => {
-            return 1;
-        }
+        Err(e) => match e {
+            crate::error::Error::Runtime(_) => {
+                return 11;
+            }
+            _ => {
+                return 12;
+            }
+        },
     };
 
     assert!(!session_p.is_null());
@@ -83,7 +102,7 @@ pub struct ele_info {
 /// -----------
 /// After calling this function, the caller is responsible for using `ele_info_free` to free the memory.
 ///
-/// # Input
+/// # Parameters
 /// - `session_p`: session string
 /// - `session_len`: session string length
 ///
