@@ -2,7 +2,7 @@
 
 use std::os::raw::*;
 
-/// Auth C ABI
+/// Authorization -- C Bind
 /// ----------
 /// # Parameters
 /// - `uid_p: *const c_char`: uid string
@@ -98,7 +98,7 @@ pub struct ele_info {
     pub room_status: [c_char; 32],
 }
 
-/// Query electricity C ABI
+/// Query electricity -- C Bind
 /// -----------
 /// After calling this function, the caller is responsible for using `ele_info_free` to free the memory.
 ///
@@ -152,46 +152,44 @@ pub extern "C" fn query_ele(session_p: *const c_char, session_len: usize) -> *mu
             subsidy_amount: info.surplus_list[0].subsidy_amount,
             display_room_name: {
                 let mut c: [c_char; 32] = [0; 32];
-                if info.display_room_name.len() > 32 {
-                    c[..32].copy_from_slice(
-                        info.display_room_name.as_bytes()[..32]
-                            .iter()
-                            .map(|&x| x as c_char)
-                            .collect::<Vec<_>>()
-                            .as_slice(),
-                    );
+                if info.display_room_name.as_bytes().len() > 31 {
+                    let slice = unsafe {
+                        std::slice::from_raw_parts(
+                            info.display_room_name.as_ptr() as *mut c_char,
+                            31,
+                        )
+                    };
+                    c[..31].copy_from_slice(slice);
                 } else {
-                    c[..info.display_room_name.as_bytes().len()].copy_from_slice(
-                        info.display_room_name
-                            .as_bytes()
-                            .iter()
-                            .map(|&x| x as c_char)
-                            .collect::<Vec<_>>()
-                            .as_slice(),
-                    );
+                    let slice = unsafe {
+                        std::slice::from_raw_parts(
+                            info.display_room_name.as_ptr() as *mut c_char,
+                            info.display_room_name.as_bytes().len(),
+                        )
+                    };
+                    c[..info.display_room_name.as_bytes().len()].copy_from_slice(slice);
                 }
                 c
             },
             room_status: {
                 let mut c: [c_char; 32] = [0; 32];
-                if info.surplus_list[0].room_status.as_bytes().len() > 32 {
-                    c[..32].copy_from_slice(
-                        info.surplus_list[0].room_status.as_bytes()[..32]
-                            .iter()
-                            .map(|&x| x as c_char)
-                            .collect::<Vec<_>>()
-                            .as_slice(),
-                    );
+                let len = info.surplus_list[0].room_status.as_bytes().len();
+                if len > 31 {
+                    let slice = unsafe {
+                        std::slice::from_raw_parts(
+                            info.surplus_list[0].room_status.as_ptr() as *mut c_char,
+                            31,
+                        )
+                    };
+                    c[..31].copy_from_slice(slice);
                 } else {
-                    c[..info.surplus_list[0].room_status.as_bytes().len()].copy_from_slice(
-                        info.surplus_list[0]
-                            .room_status
-                            .as_bytes()
-                            .iter()
-                            .map(|&x| x as c_char)
-                            .collect::<Vec<_>>()
-                            .as_slice(),
-                    );
+                    let slice = unsafe {
+                        std::slice::from_raw_parts(
+                            info.surplus_list[0].room_status.as_ptr() as *mut c_char,
+                            len,
+                        )
+                    };
+                    c[..len].copy_from_slice(slice);
                 }
                 c
             },
@@ -222,5 +220,33 @@ pub extern "C" fn free_ele_info(ele_info_p: *mut ele_info) {
     assert!(!ele_info_p.is_null());
     unsafe {
         Box::from_raw(ele_info_p);
+    }
+}
+
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct login_handler {
+    pub phone_num: [c_char; 12],
+    pub device_id: [c_char; 38], //fixed length of 37 with '\0'
+}
+
+/// Generate random device id -- C Bind
+/// -----------
+///
+#[no_mangle]
+pub extern "C" fn gen_device_id(handler: *mut login_handler) {
+    assert!(!handler.is_null());
+
+    let device_id = crate::req::login::gen_device_id();
+    unsafe {
+        (*handler).device_id[..37].copy_from_slice(
+            device_id
+                .as_bytes()
+                .iter()
+                .map(|&x| x as c_char)
+                .collect::<Vec<_>>()
+                .as_slice(),
+        );
+        (*handler).device_id[37] = '\0' as c_char;
     }
 }

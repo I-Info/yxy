@@ -78,7 +78,7 @@ pub struct LoginHandler {
 
 impl LoginHandler {
     pub fn new(phone_num: String) -> Result<Self, Error> {
-        let device_id = Self::gen_device_id();
+        let device_id = gen_device_id();
 
         Ok(Self {
             phone_num,
@@ -87,13 +87,12 @@ impl LoginHandler {
         })
     }
 
-    /// Random device id generator
-    pub fn gen_device_id() -> String {
-        let mut uuid = uuid::Uuid::new_v4().to_string();
-        uuid.retain(|c| c != '-');
-        uuid.insert_str(0, "yunma");
-
-        uuid
+    pub fn init(phone_num: &str, device_id: &str) -> Result<Self, Error> {
+        Ok(Self {
+            phone_num: phone_num.to_string(),
+            device_id: device_id.to_string(),
+            client: init_app_sim_client(&device_id)?,
+        })
     }
 
     /// Init general request body
@@ -205,6 +204,15 @@ impl LoginHandler {
     }
 }
 
+/// Random device id generator
+pub fn gen_device_id() -> String {
+    let mut uuid = uuid::Uuid::new_v4().to_string();
+    uuid.retain(|c| c != '-');
+    uuid.insert_str(0, "yunma");
+
+    uuid
+}
+
 /// Init App simulated client
 pub fn init_app_sim_client(device_id: &str) -> Result<reqwest::blocking::Client, Error> {
     let builder: reqwest::blocking::ClientBuilder = reqwest::blocking::Client::builder();
@@ -286,9 +294,14 @@ mod test {
             "ce295733862b93cb376efef661c21b4dEW6CpH8wFHp/RvViKZiJ8A==",
             "12345678",
         )?;
-        println!("Ok final: {}", result);
         assert_eq!("RxTdUD90Eg91tGZHyhTKwjX9v3fH8WWGgQ3vQ5CuiC", &result[..42]);
 
         Ok(())
+    }
+
+    #[test]
+    fn device_id() {
+        let result = gen_device_id();
+        assert_eq!("yunma1634f357c2044291873c8e0c4aa7fa41", &result[..]);
     }
 }
