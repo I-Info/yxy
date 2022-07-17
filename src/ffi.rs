@@ -238,15 +238,13 @@ pub extern "C" fn gen_device_id(handler: *mut login_handler) {
     assert!(!handler.is_null());
 
     let device_id = crate::req::login::gen_device_id();
+
     unsafe {
-        (*handler).device_id[..37].copy_from_slice(
-            device_id
-                .as_bytes()
-                .iter()
-                .map(|&x| x as c_char)
-                .collect::<Vec<_>>()
-                .as_slice(),
+        let slice = std::slice::from_raw_parts(
+            device_id.as_ptr() as *mut c_char,
+            device_id.as_bytes().len(),
         );
+        (*handler).device_id[..37].copy_from_slice(slice);
         (*handler).device_id[37] = '\0' as c_char;
     }
 }
