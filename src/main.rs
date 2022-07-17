@@ -162,13 +162,28 @@ fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
         println!("Success: {:?}", security_token);
     }
 
+    let mut captcha = String::new();
     if security_token.level != 0 {
-        // image captcha required, but not implemented yet
-        todo!("Image captcha is required. But this is not serious, try to rerun the program.");
+        // image captcha required
+        println!("Image captcha required.");
+        let result = handler.get_image_captcha(&security_token.security_token)?;
+
+        println!("Captcha: {}", result);
+
+        println!("Please input the captcha: ");
+        std::io::stdin().read_line(&mut captcha)?;
     }
 
     println!("Sending verification code...");
-    let user_exists = handler.send_verification_code(&security_token.security_token, None)?;
+    let user_exists = handler.send_verification_code(
+        &security_token.security_token,
+        if security_token.level == 0 {
+            None
+        } else {
+            Some(&captcha)
+        },
+    )?;
+
     if user_exists == false {
         eprintln!("Current user is not registered");
     }
