@@ -1,5 +1,5 @@
 //! Authorization APIs
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Read};
 
 use reqwest::{blocking::Client, cookie::Cookie};
 use serde::Deserialize;
@@ -26,19 +26,19 @@ struct AuthResponse {
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     pub id: String,
-    pub school_code: String,
-    pub school_name: String,
-    pub user_name: String,
-    pub user_type: String,
     pub mobile_phone: String,
-    pub job_no: String,
-    pub user_idcard: String,
-    pub sex: u8,
-    pub user_class: String,
-    pub bind_card_status: u8,
-    pub test_account: u8,
+    pub sex: i8,
+    pub test_account: i8,
     pub platform: String,
     pub third_openid: String,
+    pub school_code: Option<String>,
+    pub school_name: Option<String>,
+    pub user_name: Option<String>,
+    pub user_type: Option<String>,
+    pub job_no: Option<String>,
+    pub user_idcard: Option<String>,
+    pub user_class: Option<String>,
+    pub bind_card_status: Option<i8>,
 }
 
 /// Extract code from HTML text
@@ -90,7 +90,7 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Erro
     let mut params = HashMap::new();
     params.insert("code", code);
 
-    let response = client
+    let mut response = client
         .post(url::application::GET_USER_FOR_AUTHORIZE)
         .form(&params)
         .send()?;
@@ -102,7 +102,12 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Erro
     match cookies.iter().find(|x| x.name() == SESSION_KEY) {
         Some(v) => {
             let session = v.value().to_string();
-            let resp_ser: AuthResponse = response.json()?;
+            let mut resp = String::new();
+            response.read_to_string(&mut resp)?;
+            let resp_ser: AuthResponse = match serde_json::from_str(&resp) {
+                Ok(v) => v,
+                Err(e) => return Err(Error::Runtime(format!("Parsing error: {e}\nData: {resp}"))),
+            };
             if resp_ser.success == false {
                 return Err(Error::Runtime(format!(
                     "Authorize failed: {}",

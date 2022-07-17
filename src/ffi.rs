@@ -1,86 +1,42 @@
 //! Extern C ABI
 
-use std::{ffi::CString, os::raw::*};
+use std::{
+    ffi::{CStr, CString},
+    os::raw::*,
+};
 
 /// Authorization -- C Bind
 /// ----------
 /// # Parameters
-/// - `uid_p: *const c_char`: uid string
-/// - `uid_len: usize`: uid string length
-/// - `session_p: *mut c_char`: preallocated session string buffer
-/// - `session_len: usize`: session string buffer capacity
+/// - `uid: *const c_char`: uid c-string, UTF-8
 /// # Returns
-/// ## Session
-/// - `session_p: *mut c_char`: session string
-/// - `session_len: usize`: session string length
-/// ## Status codes
-/// - `0`: success
-/// - `11`: auth error, maybe uid is invalid
-/// - `12`: other error during auth
-/// - `2`: buffer is too small
+/// - `*mut c_char`: session c-string, UTF-8
 /// # Usage
 /// ```C
-/// uintptr_t auth(const char *uid_p, uintptr_t uid_len, char *session_p, uintptr_t *session_len);
-///
-/// int main() {
-///  char *session_p = malloc(40);
-///  uintptr_t session_len = 40;
-///  uintptr_t result = auth("2010000000000000000", 19, session_p, &session_len);
-///  if (result == 0) {
-///     session_p[session_len] = '\0';
-///     printf("session: %s\nlen: %ld\n", session_p, session_len);
-///   } else {
-///     printf("error: %ld\n", result);
-///   }
-/// }
+///  char uid[] = "1234567890";
+///  char *session = auth(uid);
+///  if (session == NULL) {
+///    printf("auth error\n");
+///    return;
+///  } else {
+///    printf("session: %s\n", session);
+///  }
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn auth(
-    uid_p: *const c_char,
-    uid_len: usize,
-    session_p: *mut c_char,
-    session_len: *mut usize,
-) -> usize {
-    assert!(!uid_p.is_null());
+pub extern "C" fn auth(uid: *const c_char) -> *mut c_char {
+    assert!(!uid.is_null());
 
-    let uid;
+    let uid_c = unsafe { CStr::from_ptr(uid) };
+    let uid = unsafe { std::str::from_utf8_unchecked(uid_c.to_bytes()) };
 
-    unsafe {
-        let uid_raw = std::slice::from_raw_parts(uid_p as *const u8, uid_len);
-        uid = std::str::from_utf8_unchecked(uid_raw);
-    }
-
-    let (ses, _) = match crate::auth(uid) {
-        Ok((ses, user)) => (ses, user),
-        Err(e) => match e {
-            crate::error::Error::Runtime(_) => {
-                return 11;
-            }
-            _ => {
-                return 12;
-            }
-        },
-    };
-
-    assert!(!session_p.is_null());
-    assert!(!session_len.is_null());
-
-    unsafe {
-        // Ensure the buffer is large enough
-        if ses.as_bytes().len() > *session_len {
-            return 2;
+    match crate::auth(uid) {
+        Ok((ses, _)) => CString::new(ses).unwrap().into_raw(),
+        Err(e) => {
+            eprintln!("{}", e);
+            std::ptr::null_mut()
         }
-
-        // Copy result to the buffer
-        let session = std::slice::from_raw_parts_mut(session_p as *mut u8, *session_len);
-        session[..ses.as_bytes().len()].copy_from_slice(ses.as_bytes());
-
-        // Return the number of elements
-        *session_len = ses.as_bytes().len();
     }
-
-    return 0;
 }
 
 #[repr(C)]
