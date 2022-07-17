@@ -120,10 +120,10 @@ impl Handler {
         if let Some(mut bind_info) = resp_ser.rows {
             Ok(match bind_info.pop() {
                 Some(v) => v,
-                None => return Err(Error::EmptyResp),
+                None => return Err(Error::NoBind),
             })
         } else {
-            Err(Error::EmptyResp)
+            Err(Error::NoBind)
         }
     }
 

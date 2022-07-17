@@ -21,6 +21,7 @@ use std::{
 ///  } else {
 ///    printf("session: %s\n", session);
 ///  }
+///  free_c_string(session);
 /// ```
 ///
 #[no_mangle]
@@ -33,7 +34,7 @@ pub extern "C" fn auth(uid: *const c_char) -> *mut c_char {
     match crate::auth(uid) {
         Ok((ses, _)) => CString::new(ses).unwrap().into_raw(),
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::ptr::null_mut()
         }
     }
@@ -56,7 +57,8 @@ pub struct ele_info {
 
 /// Query electricity -- C Bind
 /// -----------
-/// After calling this function, the caller is responsible for using `ele_info_free` to free the memory.
+/// After calling this function,
+/// the caller is responsible for using `free_ele_info` to deallocate the memory.
 ///
 /// # Parameters
 /// - `session_p`: session string
@@ -67,13 +69,14 @@ pub struct ele_info {
 /// - `status_code`: status code. 0 for success, others for error
 ///
 /// # Errors (status codes)
-/// - `11`: Session expired
-/// - `12`: Other query error
+/// - `11`: Auth expired
+/// - `12`: No bind info
+/// - `13`: Other error
 ///
 /// # Usage
 /// ```C
 /// int main() {
-///    ele_info *e = query_ele("00000000-0000-0000-0000-000000000000", 36);
+///    ele_info *e = query_ele("00000000-0000-0000-0000-000000000000\0");
 ///    if (e->status_code == 0) {
 ///      printf("room: %s\nstatus: %s\ntotal surplus: %f %f\nsurplus: %f "
 ///             "%f\nsubsidy: %f %f",
@@ -88,14 +91,11 @@ pub struct ele_info {
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn query_ele(session_p: *const c_char, session_len: usize) -> *mut ele_info {
-    assert!(!session_p.is_null());
+pub extern "C" fn query_ele(session: *const c_char) -> *mut ele_info {
+    assert!(!session.is_null());
 
-    let session;
-    unsafe {
-        let session_raw = std::slice::from_raw_parts(session_p as *const u8, session_len);
-        session = std::str::from_utf8_unchecked(session_raw);
-    }
+    let session_c = unsafe { CStr::from_ptr(session) };
+    let session = unsafe { std::str::from_utf8_unchecked(session_c.to_bytes()) };
 
     match crate::query_ele(session) {
         Ok(info) => Box::into_raw(Box::new(ele_info {
@@ -151,14 +151,18 @@ pub extern "C" fn query_ele(session_p: *const c_char, session_len: usize) -> *mu
             },
         })),
         Err(e) => {
-            // println!("{:?}", e);
+            eprintln!("{e}");
             match e {
                 crate::error::Error::AuthExpired => Box::into_raw(Box::new(ele_info {
                     status_code: 11,
                     ..ele_info::default()
                 })),
-                _ => Box::into_raw(Box::new(ele_info {
+                crate::error::Error::NoBind => Box::into_raw(Box::new(ele_info {
                     status_code: 12,
+                    ..ele_info::default()
+                })),
+                _ => Box::into_raw(Box::new(ele_info {
+                    status_code: 13,
                     ..ele_info::default()
                 })),
             }

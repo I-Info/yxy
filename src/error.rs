@@ -10,6 +10,7 @@ pub enum Error {
     Request(reqwest::Error),
     Rsa(rsa::errors::Error),
     EmptyResp,
+    NoBind,
     RsaPkcs(rsa::pkcs8::spki::Error),
     Decode(std::string::FromUtf8Error),
     Base64Decode(base64::DecodeError),
@@ -30,6 +31,7 @@ impl std::fmt::Display for Error {
             Decode(e) => write!(f, "Decode error: {}", e),
             Base64Decode(e) => write!(f, "Decode error: {}", e),
             Serde(e) => write!(f, "Serde error: {}", e),
+            NoBind => write!(f, "No bind info"),
         }
     }
 }
