@@ -13,6 +13,7 @@ pub enum Error {
     RsaPkcs(rsa::pkcs8::spki::Error),
     Decode(std::string::FromUtf8Error),
     Base64Decode(base64::DecodeError),
+    Serde(serde_json::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -28,6 +29,7 @@ impl std::fmt::Display for Error {
             RsaPkcs(e) => write!(f, "RSA crypto error: {}", e),
             Decode(e) => write!(f, "Decode error: {}", e),
             Base64Decode(e) => write!(f, "Decode error: {}", e),
+            Serde(e) => write!(f, "Serde error: {}", e),
         }
     }
 }
@@ -67,5 +69,11 @@ impl From<std::string::FromUtf8Error> for Error {
 impl From<base64::DecodeError> for Error {
     fn from(e: base64::DecodeError) -> Self {
         Self::Base64Decode(e)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Self::Serde(e)
     }
 }

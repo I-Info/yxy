@@ -1,5 +1,6 @@
 //! Simulate app login requests
 use std::collections::HashMap;
+use std::io::Read;
 
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
@@ -23,7 +24,7 @@ pub struct BasicResponse<T> {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SecurityToken {
+pub struct SecurityTokenResponse {
     pub level: u8,
     pub security_token: String,
 }
@@ -37,7 +38,7 @@ pub struct LoginResponse {
     pub account: String,
     pub account_encrypt: String,
     pub mobile_phone: String,
-    pub sex: i8, // 1 as male, 0 as female
+    pub sex: Option<i8>, // 1 as male, 0 as female
     pub school_code: Option<String>,
     pub school_name: Option<String>,
     pub qrcode_pay_type: Option<u8>,
@@ -107,7 +108,7 @@ impl LoginHandler {
     }
 
     /// Return security token & level
-    pub fn get_security_token(&self) -> Result<SecurityToken, Error> {
+    pub fn get_security_token(&self) -> Result<SecurityTokenResponse, Error> {
         let mut body = self.get_basic_request_body();
         body.insert("sceneCode", json!("app_user_login"));
         let resp = self
@@ -117,7 +118,7 @@ impl LoginHandler {
             .send()?;
         check_response(&resp)?;
 
-        let resp_ser: BasicResponse<SecurityToken> = resp.json()?;
+        let resp_ser: BasicResponse<SecurityTokenResponse> = resp.json()?;
         if resp_ser.success == false {
             return Err(Error::Runtime(format!(
                 "Get security token failed: {}",
@@ -128,6 +129,31 @@ impl LoginHandler {
         match resp_ser.data {
             Some(v) => Ok(v),
             None => Err(Error::EmptyResp),
+        }
+    }
+
+    /// Get image captcha
+    /// ------------
+    /// Return image captcha base64 string
+    pub fn get_image_captcha(&self, security_token: &str) -> Result<String, Error> {
+        let mut body = self.get_basic_request_body();
+        body.insert("securityToken", json!(security_token));
+
+        let resp = self
+            .client
+            .post(url::app::GET_IMAGE_CAPTCHA)
+            .json(&body)
+            .send()?;
+        check_response(&resp)?;
+
+        let resp_ser: BasicResponse<String> = resp.json()?;
+        if resp_ser.success == false {
+            Err(Error::Runtime(format!(
+                "Get image captcha failed: {}",
+                resp_ser.message
+            )))
+        } else {
+            Ok(resp_ser.data.unwrap())
         }
     }
 
@@ -143,6 +169,7 @@ impl LoginHandler {
         body.insert("securityToken", json!(security_token));
         body.insert("sendCount", json!(1u8));
         body.insert("mobilePhone", json!(self.phone_num));
+
         // If image captcha required
         if let Some(v) = captcha {
             body.insert("imageCafptchaValue", json!(v));
@@ -187,14 +214,26 @@ impl LoginHandler {
         body.insert("osVersion", json!(11u8));
         body.insert("verificationCode", json!(code));
 
-        let resp = self
+        let mut resp = self
             .client
             .post(url::app::DO_LOGIN_BY_CODE)
             .json(&body)
             .send()?;
         check_response(&resp)?;
 
-        let resp_ser: BasicResponse<LoginResponse> = resp.json()?;
+        let mut buf = String::new();
+        resp.read_to_string(&mut buf)?;
+        // println!("resp: {}", buf);
+
+        let resp_ser: BasicResponse<LoginResponse> = match serde_json::from_str(&buf) {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(Error::Runtime(format!(
+                    "Parsing login response failed: {}\nData: {}",
+                    e, buf
+                )))
+            }
+        };
         if resp_ser.success == false {
             return Err(Error::Runtime(format!("Login error: {}", resp_ser.message)));
         }
@@ -300,8 +339,11 @@ mod test {
     }
 
     #[test]
-    fn device_id() {
-        let result = gen_device_id();
-        assert_eq!("yunma1634f357c2044291873c8e0c4aa7fa41", &result[..]);
+    fn get_captcha() -> Result<(), Error> {
+        let handler = LoginHandler::new("12345678911".to_string())?;
+        let security_token = handler.get_security_token()?;
+        let result = handler.get_image_captcha(&security_token.security_token)?;
+        assert_eq!(&result[..22], "data:image/jpeg;base64");
+        Ok(())
     }
 }
