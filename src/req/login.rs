@@ -33,8 +33,8 @@ pub struct SecurityTokenResponse {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginResponse {
-    pub id: String, // UID
-    pub token: String,
+    pub id: String,    // UID
+    pub token: String, // App login token
     pub account: String,
     pub account_encrypt: String,
     pub mobile_phone: String,
@@ -64,8 +64,8 @@ pub struct LoginResponse {
     pub platform: String,
     pub uu_token: String,
     pub qrcode_private_key: String, // Private key
-    pub bind_card_rate: i32,
-    pub points: i32,
+    pub bind_card_rate: Option<i32>,
+    pub points: Option<i32>,
     pub school_identity_type: Option<i32>,
     pub alumni_flag: Option<i32>,
     pub ext_json: Option<String>,
