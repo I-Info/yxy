@@ -9,38 +9,6 @@ mod conf;
 fn main() -> Result<(), Box<dyn Error>> {
     let opts = arg::Options::parse();
 
-    let conf_path = match &opts.config {
-        Some(c) => c,
-        None => "./conf.yaml",
-    };
-
-    let conf = match conf::Config::parse(&conf_path) {
-        Ok(v) => v,
-        Err(e) => {
-            return Err(Box::new(yxy::error::Error::Runtime(format!(
-                "Read/Parse conf.yaml file error: {}",
-                e
-            ))));
-        }
-    };
-
-    // Read the session cache
-    let session = match &conf.cookie_file {
-        None => None,
-        Some(cookie_file) => match std::fs::read_to_string(cookie_file) {
-            Ok(v) => {
-                if opts.verbose {
-                    println!("Using cached session id: {}", v);
-                }
-                Some(v)
-            }
-            Err(e) => {
-                eprintln!("Session cache file reading error: {}", e);
-                None
-            }
-        },
-    };
-
     if let Some(v) = opts.command {
         match v {
             arg::Commands::Query { query: q, arg: a } => match q {
@@ -54,6 +22,38 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
         }
     } else {
+        let conf_path = match &opts.config {
+            Some(c) => c,
+            None => "./conf.yaml",
+        };
+
+        let conf = match conf::Config::parse(&conf_path) {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(Box::new(yxy::error::Error::Runtime(format!(
+                    "Read/Parse conf.yaml file error: {}",
+                    e
+                ))));
+            }
+        };
+
+        // Read the session cache
+        let session = match &conf.cookie_file {
+            None => None,
+            Some(cookie_file) => match std::fs::read_to_string(cookie_file) {
+                Ok(v) => {
+                    if opts.verbose {
+                        println!("Using cached session id: {}", v);
+                    }
+                    Some(v)
+                }
+                Err(e) => {
+                    eprintln!("Session cache file reading error: {}", e);
+                    None
+                }
+            },
+        };
+
         // Default query electricity
         let (result, session) = query_ele(&conf.uid, session, opts.verbose)?;
 

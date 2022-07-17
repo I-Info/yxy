@@ -1,6 +1,6 @@
 //! Extern C ABI
 
-use std::os::raw::*;
+use std::{ffi::CString, os::raw::*};
 
 /// Authorization -- C Bind
 /// ----------
@@ -210,22 +210,22 @@ pub extern "C" fn query_ele(session_p: *const c_char, session_len: usize) -> *mu
     }
 }
 
-/// Free ele_info heap memory
+/// Free ele_info
 /// -----------
-/// Free the struct to avoid memory leak.
+/// Deallocate the struct to avoid memory leak.
 ///
 /// see `query_ele` for more information.
 #[no_mangle]
 pub extern "C" fn free_ele_info(ele_info_p: *mut ele_info) {
     assert!(!ele_info_p.is_null());
     unsafe {
-        Box::from_raw(ele_info_p);
+        drop(Box::from_raw(ele_info_p));
     }
 }
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
-pub struct login_handler {
+pub struct login_handle {
     pub phone_num: [c_char; 12],
     pub device_id: [c_char; 38], //fixed length of 37 with '\0'
 }
@@ -234,7 +234,7 @@ pub struct login_handler {
 /// -----------
 ///
 #[no_mangle]
-pub extern "C" fn gen_device_id(handler: *mut login_handler) {
+pub extern "C" fn gen_device_id(handler: *mut login_handle) {
     assert!(!handler.is_null());
 
     let device_id = crate::req::login::gen_device_id();
@@ -246,5 +246,67 @@ pub extern "C" fn gen_device_id(handler: *mut login_handler) {
         );
         (*handler).device_id[..37].copy_from_slice(slice);
         (*handler).device_id[37] = '\0' as c_char;
+    }
+}
+
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct security_token_result {
+    pub level: c_int,
+    pub security_token: *mut c_char,
+}
+
+/// Get security token -- C Bind
+/// -----------
+/// # Returns
+/// - `*mut security_token_result`:
+/// security token. Return nullptr on error.
+/// The caller is responsible for freeing the memory.
+#[no_mangle]
+pub extern "C" fn get_security_token(handle: *const login_handle) -> *mut security_token_result {
+    assert!(!handle.is_null());
+
+    let phone_num = unsafe {
+        let slice = std::slice::from_raw_parts((*handle).phone_num.as_ptr() as *const u8, 11);
+        std::str::from_utf8_unchecked(slice)
+    };
+    let device_id = unsafe {
+        let slice = std::slice::from_raw_parts((*handle).device_id.as_ptr() as *const u8, 37);
+        std::str::from_utf8_unchecked(slice)
+    };
+
+    if let Ok(handler) = crate::req::login::LoginHandler::init(phone_num, device_id) {
+        match handler.get_security_token() {
+            Ok(token) => Box::into_raw(Box::new(security_token_result {
+                level: token.level as c_int,
+                security_token: CString::new(token.security_token).unwrap().into_raw(),
+            })),
+            Err(_) => std::ptr::null_mut(), // Return nullptr if error
+        }
+    } else {
+        std::ptr::null_mut()
+    }
+}
+
+/// Free security_token_result
+/// -----------
+/// Deallocate the struct to avoid memory leak.
+#[no_mangle]
+pub extern "C" fn free_security_token_result(p: *mut security_token_result) {
+    assert!(!p.is_null());
+    unsafe {
+        drop(CString::from_raw((*p).security_token));
+        drop(Box::from_raw(p));
+    }
+}
+
+/// Free c_string
+/// -----------
+/// Deallocate c_string to avoid memory leak.
+#[no_mangle]
+pub extern "C" fn free_c_string(c_string: *mut c_char) {
+    assert!(!c_string.is_null());
+    unsafe {
+        drop(CString::from_raw(c_string));
     }
 }
