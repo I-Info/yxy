@@ -191,9 +191,12 @@ impl LoginHandler {
 
         let resp_ser: BasicResponse<Data> = resp.json()?;
         if resp_ser.success == false {
+            if resp_ser.status_code == 203 {
+                return Err(Error::VerificationLimit);
+            }
             return Err(Error::Runtime(format!(
-                "Send verification code error: {}",
-                resp_ser.message
+                "Send verification code error: {{code: {}, message: {}}}",
+                resp_ser.status_code, resp_ser.message
             )));
         }
 
@@ -236,7 +239,10 @@ impl LoginHandler {
             }
         };
         if resp_ser.success == false {
-            return Err(Error::Runtime(format!("Login error: {}", resp_ser.message)));
+            return Err(Error::Runtime(format!(
+                "Login error: {{code: {}, msg: {}}}",
+                resp_ser.status_code, resp_ser.message
+            )));
         }
         let result = resp_ser.data.unwrap();
 

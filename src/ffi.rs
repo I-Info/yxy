@@ -267,12 +267,15 @@ pub extern "C" fn send_verification_code(
                 if v {
                     0 // Success
                 } else {
-                    1 // Return 1 if user is not exist
+                    11 // Return 11 if user is not exist
                 }
             }
             Err(e) => {
                 eprintln!("{e}");
-                3 // Return 3 if send verification code error
+                match e {
+                    crate::error::Error::VerificationLimit => 12,
+                    _ => 13, // Return 3 on other error
+                }
             }
         }
     } else {
