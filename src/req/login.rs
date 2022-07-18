@@ -192,8 +192,13 @@ impl LoginHandler {
         let resp_ser: BasicResponse<Data> = resp.json()?;
         if resp_ser.success == false {
             if resp_ser.status_code == 203 {
-                return Err(Error::VerificationLimit);
+                if resp_ser.message == "请输入正确的手机号"
+                    || resp_ser.message == "手机号码格式错误"
+                {
+                    return Err(Error::BadPhoneNumber);
+                }
             }
+
             return Err(Error::Runtime(format!(
                 "Send verification code error: {{code: {}, message: {}}}",
                 resp_ser.status_code, resp_ser.message

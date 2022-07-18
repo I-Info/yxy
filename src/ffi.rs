@@ -267,14 +267,15 @@ pub extern "C" fn send_verification_code(
                 if v {
                     0 // Success
                 } else {
-                    11 // Return 11 if user is not exist
+                    1 // Return 1 if user is not exist
                 }
             }
             Err(e) => {
                 eprintln!("{e}");
                 match e {
-                    crate::error::Error::VerificationLimit => 12,
-                    _ => 13, // Return 3 on other error
+                    crate::error::Error::BadPhoneNumber => 12,
+                    crate::error::Error::VerificationLimit => 13,
+                    _ => 101, // Return 3 on other error
                 }
             }
         }
@@ -289,7 +290,7 @@ pub struct login_result {
     uid: *mut c_char,
     token: *mut c_char,
     device_id: *mut c_char,
-    bind_card_status: c_int,
+    bind_card_status: c_int, //0: not bind, 1: bind
 }
 
 /// Do login with verification code -- C Bind
