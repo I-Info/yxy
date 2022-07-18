@@ -27,9 +27,7 @@ use std::{
 #[no_mangle]
 pub extern "C" fn auth(uid: *const c_char) -> *mut c_char {
     assert!(!uid.is_null());
-
-    let uid_c = unsafe { CStr::from_ptr(uid) };
-    let uid = unsafe { std::str::from_utf8_unchecked(uid_c.to_bytes()) };
+    let uid = unsafe { c_str_to_str(uid) };
 
     match crate::auth(uid) {
         Ok((ses, _)) => CString::new(ses).unwrap().into_raw(),
@@ -53,6 +51,20 @@ pub struct ele_info {
     pub subsidy_amount: c_float,
     pub display_room_name: [c_char; 32],
     pub room_status: [c_char; 32],
+}
+
+/// Copy &str to fixed-size c_char array
+fn copy_str_to_char_array<const L: usize>(s: &str) -> [c_char; L] {
+    let mut c = [0 as c_char; L];
+    let len = s.as_bytes().len();
+    if len > L - 1 {
+        let slice = unsafe { std::slice::from_raw_parts(s.as_ptr() as *mut c_char, L - 1) };
+        c[..L - 1].copy_from_slice(slice);
+    } else {
+        let slice = unsafe { std::slice::from_raw_parts(s.as_ptr() as *mut c_char, len) };
+        c[..len].copy_from_slice(slice);
+    }
+    c
 }
 
 /// Query electricity -- C Bind
@@ -93,9 +105,7 @@ pub struct ele_info {
 #[no_mangle]
 pub extern "C" fn query_ele(session: *const c_char) -> *mut ele_info {
     assert!(!session.is_null());
-
-    let session_c = unsafe { CStr::from_ptr(session) };
-    let session = unsafe { std::str::from_utf8_unchecked(session_c.to_bytes()) };
+    let session = unsafe { c_str_to_str(session) };
 
     match crate::query_ele(session) {
         Ok(info) => Box::into_raw(Box::new(ele_info {
@@ -106,49 +116,8 @@ pub extern "C" fn query_ele(session: *const c_char) -> *mut ele_info {
             surplus_amount: info.surplus_list[0].amount,
             subsidy: info.surplus_list[0].subsidy,
             subsidy_amount: info.surplus_list[0].subsidy_amount,
-            display_room_name: {
-                let mut c: [c_char; 32] = [0; 32];
-                if info.display_room_name.as_bytes().len() > 31 {
-                    let slice = unsafe {
-                        std::slice::from_raw_parts(
-                            info.display_room_name.as_ptr() as *mut c_char,
-                            31,
-                        )
-                    };
-                    c[..31].copy_from_slice(slice);
-                } else {
-                    let slice = unsafe {
-                        std::slice::from_raw_parts(
-                            info.display_room_name.as_ptr() as *mut c_char,
-                            info.display_room_name.as_bytes().len(),
-                        )
-                    };
-                    c[..info.display_room_name.as_bytes().len()].copy_from_slice(slice);
-                }
-                c
-            },
-            room_status: {
-                let mut c: [c_char; 32] = [0; 32];
-                let len = info.surplus_list[0].room_status.as_bytes().len();
-                if len > 31 {
-                    let slice = unsafe {
-                        std::slice::from_raw_parts(
-                            info.surplus_list[0].room_status.as_ptr() as *mut c_char,
-                            31,
-                        )
-                    };
-                    c[..31].copy_from_slice(slice);
-                } else {
-                    let slice = unsafe {
-                        std::slice::from_raw_parts(
-                            info.surplus_list[0].room_status.as_ptr() as *mut c_char,
-                            len,
-                        )
-                    };
-                    c[..len].copy_from_slice(slice);
-                }
-                c
-            },
+            display_room_name: copy_str_to_char_array(&info.display_room_name),
+            room_status: copy_str_to_char_array(&info.surplus_list[0].room_status),
         })),
         Err(e) => {
             eprintln!("{e}");
@@ -190,6 +159,24 @@ pub struct login_handle {
     pub device_id: [c_char; 38], //fixed length of 37 with '\0'
 }
 
+/// Initialize login handler
+fn init_handler(
+    handle: *const login_handle,
+) -> Result<crate::req::login::LoginHandler, crate::error::Error> {
+    assert!(!handle.is_null());
+
+    let phone_num = unsafe {
+        let slice = std::slice::from_raw_parts((*handle).phone_num.as_ptr() as *const u8, 11);
+        std::str::from_utf8_unchecked(slice)
+    };
+    let device_id = unsafe {
+        let slice = std::slice::from_raw_parts((*handle).device_id.as_ptr() as *const u8, 37);
+        std::str::from_utf8_unchecked(slice)
+    };
+
+    crate::req::login::LoginHandler::init(phone_num, device_id)
+}
+
 /// Generate random device id -- C Bind
 /// -----------
 ///
@@ -224,18 +211,7 @@ pub struct security_token_result {
 /// The caller is responsible for freeing the memory.
 #[no_mangle]
 pub extern "C" fn get_security_token(handle: *const login_handle) -> *mut security_token_result {
-    assert!(!handle.is_null());
-
-    let phone_num = unsafe {
-        let slice = std::slice::from_raw_parts((*handle).phone_num.as_ptr() as *const u8, 11);
-        std::str::from_utf8_unchecked(slice)
-    };
-    let device_id = unsafe {
-        let slice = std::slice::from_raw_parts((*handle).device_id.as_ptr() as *const u8, 37);
-        std::str::from_utf8_unchecked(slice)
-    };
-
-    if let Ok(handler) = crate::req::login::LoginHandler::init(phone_num, device_id) {
+    if let Ok(handler) = init_handler(handle) {
         match handler.get_security_token() {
             Ok(token) => Box::into_raw(Box::new(security_token_result {
                 level: token.level as c_int,
@@ -269,4 +245,68 @@ pub extern "C" fn free_c_string(c_string: *mut c_char) {
     unsafe {
         drop(CString::from_raw(c_string));
     }
+}
+
+/// Send SMS verification code -- C Bind
+/// -----------
+///
+#[no_mangle]
+pub extern "C" fn send_verification_code(
+    handle: *const login_handle,
+    security_token: *const c_char,
+    captcha: *const c_char,
+) -> c_int {
+    if let Ok(handler) = init_handler(handle) {
+        let captcha = if captcha.is_null() {
+            None
+        } else {
+            Some(unsafe { c_str_to_str(captcha) })
+        };
+        match handler.send_verification_code(unsafe { c_str_to_str(security_token) }, captcha) {
+            Ok(v) => {
+                if v {
+                    0 // Success
+                } else {
+                    1 // Return 1 if user is not exist
+                }
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                3 // Return 3 if send verification code error
+            }
+        }
+    } else {
+        2 // Init handler error
+    }
+}
+
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct login_result {
+    uid: *mut c_char,
+    token: *mut c_char,
+}
+
+/// Do login with verification code -- C Bind
+/// -----------
+///
+#[no_mangle]
+pub extern "C" fn do_login(handle: *const login_handle, code: *const c_char) {
+    assert!(!code.is_null());
+    if let Ok(handler) = init_handler(handle) {
+        match handler.do_login(unsafe { c_str_to_str(code) }) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("{e}");
+            }
+        }
+    }
+}
+
+/// Convert c-string to &str
+/// -----------
+/// `unsafe`
+unsafe fn c_str_to_str<'a>(c_str: *const c_char) -> &'a str {
+    let c_str = CStr::from_ptr(c_str);
+    std::str::from_utf8_unchecked(c_str.to_bytes())
 }

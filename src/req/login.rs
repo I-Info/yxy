@@ -203,6 +203,7 @@ impl LoginHandler {
         Ok(user_exists)
     }
 
+    /// Do login with verification code
     pub fn do_login(&self, code: &str) -> Result<LoginResponse, Error> {
         let mut body = self.get_basic_request_body();
         body.insert("appPlatform", json!("Android"));
