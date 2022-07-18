@@ -41,16 +41,15 @@ pub extern "C" fn auth(uid: *const c_char) -> *mut c_char {
 #[repr(C)]
 #[derive(Default)]
 #[allow(non_camel_case_types)]
-pub struct ele_info {
-    pub status_code: c_int,
+pub struct ele_result {
     pub total_surplus: c_float,
     pub total_amount: c_float,
     pub surplus: c_float,
     pub surplus_amount: c_float,
     pub subsidy: c_float,
     pub subsidy_amount: c_float,
-    pub display_room_name: [c_char; 32],
-    pub room_status: [c_char; 32],
+    pub display_room_name: [c_char; 32], // Fixed capacity
+    pub room_status: [c_char; 32],       // Fixed capacity
 }
 
 /// Copy &str to fixed-size c_char array
@@ -103,37 +102,33 @@ fn copy_str_to_char_array<const L: usize>(s: &str) -> [c_char; L] {
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn query_ele(session: *const c_char) -> *mut ele_info {
+pub extern "C" fn query_ele(session: *const c_char, result: *mut *const ele_result) -> c_int {
     assert!(!session.is_null());
+    assert!(!result.is_null());
+
     let session = unsafe { c_str_to_str(session) };
 
     match crate::query_ele(session) {
-        Ok(info) => Box::into_raw(Box::new(ele_info {
-            status_code: 0,
-            total_surplus: info.soc,
-            total_amount: info.total_soc_amount,
-            surplus: info.surplus_list[0].surplus,
-            surplus_amount: info.surplus_list[0].amount,
-            subsidy: info.surplus_list[0].subsidy,
-            subsidy_amount: info.surplus_list[0].subsidy_amount,
-            display_room_name: copy_str_to_char_array(&info.display_room_name),
-            room_status: copy_str_to_char_array(&info.surplus_list[0].room_status),
-        })),
+        Ok(info) => unsafe {
+            (*result) = Box::into_raw(Box::new(ele_result {
+                total_surplus: info.soc,
+                total_amount: info.total_soc_amount,
+                surplus: info.surplus_list[0].surplus,
+                surplus_amount: info.surplus_list[0].amount,
+                subsidy: info.surplus_list[0].subsidy,
+                subsidy_amount: info.surplus_list[0].subsidy_amount,
+                display_room_name: copy_str_to_char_array(&info.display_room_name),
+                room_status: copy_str_to_char_array(&info.surplus_list[0].room_status),
+            }));
+
+            0 // Return 0 for success
+        },
         Err(e) => {
             eprintln!("{e}");
             match e {
-                crate::error::Error::AuthExpired => Box::into_raw(Box::new(ele_info {
-                    status_code: 11,
-                    ..ele_info::default()
-                })),
-                crate::error::Error::NoBind => Box::into_raw(Box::new(ele_info {
-                    status_code: 12,
-                    ..ele_info::default()
-                })),
-                _ => Box::into_raw(Box::new(ele_info {
-                    status_code: 13,
-                    ..ele_info::default()
-                })),
+                crate::error::Error::AuthExpired => 11,
+                crate::error::Error::NoBind => 12,
+                _ => 101,
             }
         }
     }
@@ -145,18 +140,18 @@ pub extern "C" fn query_ele(session: *const c_char) -> *mut ele_info {
 ///
 /// see `query_ele` for more information.
 #[no_mangle]
-pub extern "C" fn free_ele_info(ele_info_p: *mut ele_info) {
-    assert!(!ele_info_p.is_null());
+pub extern "C" fn free_ele_result(p: *mut ele_result) {
+    assert!(!p.is_null());
     unsafe {
-        drop(Box::from_raw(ele_info_p));
+        drop(Box::from_raw(p));
     }
 }
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub struct login_handle {
-    pub phone_num: [c_char; 12],
-    pub device_id: [c_char; 38], //fixed length of 37 with '\0'
+    pub phone_num: [c_char; 12], // Fixed length of 12 with '\0'
+    pub device_id: [c_char; 38], // Fixed length of 37 with '\0'
 }
 
 /// Initialize login handler
@@ -200,7 +195,7 @@ pub extern "C" fn gen_device_id(handler: *mut login_handle) {
 #[allow(non_camel_case_types)]
 pub struct security_token_result {
     pub level: c_int,
-    pub security_token: *mut c_char,
+    pub token: *mut c_char,
 }
 
 /// Get security token -- C Bind
@@ -215,7 +210,7 @@ pub extern "C" fn get_security_token(handle: *const login_handle) -> *mut securi
         match handler.get_security_token() {
             Ok(token) => Box::into_raw(Box::new(security_token_result {
                 level: token.level as c_int,
-                security_token: CString::new(token.security_token).unwrap().into_raw(),
+                token: CString::new(token.security_token).unwrap().into_raw(),
             })),
             Err(_) => std::ptr::null_mut(), // Return nullptr if error
         }
@@ -231,7 +226,7 @@ pub extern "C" fn get_security_token(handle: *const login_handle) -> *mut securi
 pub extern "C" fn free_security_token_result(p: *mut security_token_result) {
     assert!(!p.is_null());
     unsafe {
-        drop(CString::from_raw((*p).security_token));
+        drop(CString::from_raw((*p).token));
         drop(Box::from_raw(p));
     }
 }
@@ -297,26 +292,33 @@ pub struct login_result {
 /// -----------
 ///
 #[no_mangle]
-pub extern "C" fn do_login(handle: *const login_handle, code: *const c_char) -> *mut login_result {
+pub extern "C" fn do_login(
+    handle: *const login_handle,
+    code: *const c_char,
+    result: *mut *const login_result,
+) -> c_int {
     assert!(!code.is_null());
+    assert!(!result.is_null());
+
     if let Ok(handler) = init_handler(handle) {
         match handler.do_login(unsafe { c_str_to_str(code) }) {
-            Ok(v) => {
-                let result = login_result {
+            Ok(v) => unsafe {
+                (*result) = Box::into_raw(Box::new(login_result {
                     uid: CString::new(v.id).unwrap().into_raw(),
                     token: CString::new(v.token).unwrap().into_raw(),
                     device_id: CString::new(v.device_id).unwrap().into_raw(),
                     bind_card_status: v.bind_card_status as c_int,
-                };
-                Box::into_raw(Box::new(result))
-            }
+                }));
+
+                0
+            },
             Err(e) => {
                 eprintln!("{e}");
-                std::ptr::null_mut() // Return nullptr if error
+                1 // Return nullptr if error
             }
         }
     } else {
-        std::ptr::null_mut()
+        2
     }
 }
 
