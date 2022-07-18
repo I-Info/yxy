@@ -97,8 +97,11 @@ jobs:
         run: |
           mkdir dist
           cp artifacts/x86_64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-apple-darwin
+          cp artifacts/x86_64-apple-darwin/libyxy.dylib dist/
           cp artifacts/x86_64-pc-windows-msvc/yxy.exe dist/yxy-${GITHUB_REF##*/}-x86_64-pc-windows-msvc.exe
+          cp artifacts/x86_64-pc-windows-msvc/libyxy.dll dist/
           cp artifacts/x86_64-unknown-linux-gnu/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-unknown-linux-gnu
+          cp artifacts/x86_64-unknown-linux-gnu/libyxy.so dist/
         # cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
 
       - name: Publish release
