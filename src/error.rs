@@ -13,6 +13,7 @@ pub enum Error {
     NoBind,
     VerificationLimit,
     BadPhoneNumber,
+    BadVerificationCode,
     RsaPkcs(rsa::pkcs8::spki::Error),
     Decode(std::string::FromUtf8Error),
     Base64Decode(base64::DecodeError),
@@ -36,6 +37,7 @@ impl std::fmt::Display for Error {
             NoBind => write!(f, "No bind info"),
             VerificationLimit => write!(f, "Verification limited, maybe too many requests"),
             BadPhoneNumber => write!(f, "Bad phone number"),
+            BadVerificationCode => write!(f, "Bad verification code"),
         }
     }
 }

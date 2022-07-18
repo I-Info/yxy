@@ -273,9 +273,9 @@ pub extern "C" fn send_verification_code(
             Err(e) => {
                 eprintln!("{e}");
                 match e {
-                    crate::error::Error::BadPhoneNumber => 12,
-                    crate::error::Error::VerificationLimit => 13,
-                    _ => 101, // Return 3 on other error
+                    crate::error::Error::BadPhoneNumber => 12, // Bad phone number
+                    crate::error::Error::VerificationLimit => 13, // Too may requests, limited
+                    _ => 101,                                  // Return 101 on other error
                 }
             }
         }

@@ -197,6 +197,11 @@ impl LoginHandler {
                 {
                     return Err(Error::BadPhoneNumber);
                 }
+                if resp_ser.message == "发送超限，请明天再来"
+                    || &resp_ser.message[..4] == "经过你的"
+                {
+                    return Err(Error::VerificationLimit);
+                }
             }
 
             return Err(Error::Runtime(format!(
@@ -244,6 +249,10 @@ impl LoginHandler {
             }
         };
         if resp_ser.success == false {
+            if &resp_ser.message[..4] == "您已输错" {
+                return Err(Error::BadVerificationCode);
+            }
+
             return Err(Error::Runtime(format!(
                 "Login error: {{code: {}, msg: {}}}",
                 resp_ser.status_code, resp_ser.message
