@@ -285,21 +285,49 @@ pub extern "C" fn send_verification_code(
 pub struct login_result {
     uid: *mut c_char,
     token: *mut c_char,
+    device_id: *mut c_char,
+    bind_card_status: c_int,
 }
 
 /// Do login with verification code -- C Bind
 /// -----------
 ///
 #[no_mangle]
-pub extern "C" fn do_login(handle: *const login_handle, code: *const c_char) {
+pub extern "C" fn do_login(handle: *const login_handle, code: *const c_char) -> *mut login_result {
     assert!(!code.is_null());
     if let Ok(handler) = init_handler(handle) {
         match handler.do_login(unsafe { c_str_to_str(code) }) {
-            Ok(_) => {}
+            Ok(v) => {
+                let result = login_result {
+                    uid: CString::new(v.id).unwrap().into_raw(),
+                    token: CString::new(v.token).unwrap().into_raw(),
+                    device_id: CString::new(v.device_id).unwrap().into_raw(),
+                    bind_card_status: v.bind_card_status as c_int,
+                };
+                Box::into_raw(Box::new(result))
+            }
             Err(e) => {
                 eprintln!("{e}");
+                std::ptr::null_mut() // Return nullptr if error
             }
         }
+    } else {
+        std::ptr::null_mut()
+    }
+}
+
+/// Free login_result
+/// ---------
+/// Deallocate the struct to avoid memory leak.
+///
+#[no_mangle]
+pub extern "C" fn free_login_result(p: *mut login_result) {
+    assert!(!p.is_null());
+    unsafe {
+        drop(CString::from_raw((*p).uid));
+        drop(CString::from_raw((*p).token));
+        drop(CString::from_raw((*p).device_id));
+        drop(Box::from_raw(p));
     }
 }
 
