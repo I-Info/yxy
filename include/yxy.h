@@ -37,7 +37,7 @@ typedef struct login_result {
  * # Inputs
  * - `uid: *const c_char`: uid c-string, UTF-8
  * # Returns
- * - `*mut c_char`: session c-string, UTF-8
+ * - `*mut c_char`: session c-string, UTF-8. Return nullptr on error.
  */
 char *auth(const char *uid);
 
