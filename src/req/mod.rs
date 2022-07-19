@@ -1,5 +1,5 @@
 //! Requests
-use std::{sync::Arc, time::Duration};
+use std::{io::Read, sync::Arc, time::Duration};
 
 use reqwest::{blocking::Response, cookie::Jar, header};
 
@@ -73,9 +73,15 @@ impl Handler {
     }
 }
 
-fn check_response(res: &Response) -> Result<(), Error> {
+fn check_response(res: &mut Response) -> Result<(), Error> {
     if !res.status().is_success() {
-        return Err(Error::Runtime(format!("bad response: {}", res.status())));
+        let mut text = String::new();
+        res.read_to_string(&mut text)?;
+        return Err(Error::Runtime(format!(
+            "Bad response: {}\nText: {}",
+            res.status(),
+            text,
+        )));
     }
 
     Ok(())

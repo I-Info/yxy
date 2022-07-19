@@ -111,12 +111,12 @@ impl LoginHandler {
     pub fn get_security_token(&self) -> Result<SecurityTokenResponse, Error> {
         let mut body = self.get_basic_request_body();
         body.insert("sceneCode", json!("app_user_login"));
-        let resp = self
+        let mut resp = self
             .client
             .post(url::app::GET_SECURITY_TOKEN)
             .json(&body)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
 
         let resp_ser: BasicResponse<SecurityTokenResponse> = resp.json()?;
         if resp_ser.success == false {
@@ -139,12 +139,12 @@ impl LoginHandler {
         let mut body = self.get_basic_request_body();
         body.insert("securityToken", json!(security_token));
 
-        let resp = self
+        let mut resp = self
             .client
             .post(url::app::GET_IMAGE_CAPTCHA)
             .json(&body)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
 
         let resp_ser: BasicResponse<String> = resp.json()?;
         if resp_ser.success == false {
@@ -175,12 +175,12 @@ impl LoginHandler {
             body.insert("imageCafptchaValue", json!(v));
         }
 
-        let resp = self
+        let mut resp = self
             .client
             .post(url::app::SEND_VERIFICATION_CODE)
             .json(&body)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
 
         /// Define data object
         #[derive(Debug, Deserialize)]
@@ -233,7 +233,7 @@ impl LoginHandler {
             .post(url::app::DO_LOGIN_BY_CODE)
             .json(&body)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
 
         let mut buf = String::new();
         resp.read_to_string(&mut buf)?;

@@ -11,7 +11,7 @@ readme = "README.md"
 exclude = [".github/*"]
 
 [lib]
-crate-type = ["lib","cdylib"]
+crate-type = ["lib", "cdylib", "staticlib"]
 
 [dependencies]
 rsa = "0.6"
@@ -38,6 +38,7 @@ features = [
 
 [dependencies.reqwest]
 version = "0.11"
+# default-features = false 
 features = [
     "blocking",
     "json",

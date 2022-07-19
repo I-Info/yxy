@@ -99,12 +99,12 @@ impl Handler {
     /// Only return one bind info from list
     pub fn query_bind(&self) -> Result<BindInfo, Error> {
         let form = vec![("bindType", "3")];
-        let resp = self
+        let mut resp = self
             .client
             .post(url::application::QUERY_BIND)
             .form(&form)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
         let resp_ser: QueryBindResponse = resp.json()?;
         if resp_ser.success == false {
             if resp_ser.status_code == 204 {
@@ -128,12 +128,12 @@ impl Handler {
     }
 
     pub fn query_electricity(&self, info: RoomInfo) -> Result<ElectricityInfo, Error> {
-        let resp = self
+        let mut resp = self
             .client
             .post(url::application::QUERY_ELECTRICITY)
             .json(&info)
             .send()?;
-        check_response(&resp)?;
+        check_response(&mut resp)?;
         let resp_ser: QueryElResponse = resp.json()?;
 
         if resp_ser.success == false {

@@ -64,7 +64,7 @@ fn extract_code(text: &str) -> Option<String> {
 }
 
 pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Error> {
-    let response = client
+    let mut response = client
         .get(url::auth::OAUTH_URL)
         .query(&[
             ("bindSkip", "1"),
@@ -74,7 +74,7 @@ pub fn get_oauth_code(client: &Client, id: &str) -> Result<String, Error> {
             ("unionid", id),
         ])
         .send()?;
-    check_response(&response)?;
+    check_response(&mut response)?;
 
     let text = response.text()?;
 
@@ -94,7 +94,7 @@ pub fn authorize(client: &Client, code: &str) -> Result<(String, UserInfo), Erro
         .post(url::application::GET_USER_FOR_AUTHORIZE)
         .form(&params)
         .send()?;
-    check_response(&response)?;
+    check_response(&mut response)?;
 
     let cookies: Vec<Cookie> = response.cookies().collect();
 
