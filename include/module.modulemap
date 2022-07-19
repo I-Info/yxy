@@ -1,0 +1,4 @@
+module yxy {
+    header "yxy.h"
+    export *
+}
