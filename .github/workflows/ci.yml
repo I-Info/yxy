@@ -49,29 +49,43 @@ jobs:
           path: |
             target/release/*yxy*
 
-  aarch64-macos:
+  xcframework:
     runs-on: "macos-latest"
     steps:
       - uses: actions/checkout@v3
 
       - name: Install ARM target
-        run: rustup update && rustup target add aarch64-apple-darwin aarch64-apple-ios
+        run: rustup update && rustup target add aarch64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 
       - name: List support target platform
         run: rustup target list
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Build for aarch64-apple-darwin
-        run: cargo build -vr --target=aarch64-apple-darwin
+      # - name: Build for aarch64-apple-darwin
+      #   run: cargo build -vr --target=aarch64-apple-darwin
 
-      - name: Build for aarch-apple-ios
-        run: cargo build -vr --target=aarch64-apple-ios
+      # - name: Build for aarch-apple-ios
+      #   run: cargo build -vr --target=aarch64-apple-ios
 
-      - name: List target
+      # - name: List target
+      #   run: |
+      #     ls -lh target/aarch64-apple-darwin/release
+      #     ls -lh target/aarch64-apple-ios/release
+
+      - name: Build & Create XCFramework Bundle
         run: |
-          ls -lh target/aarch64-apple-darwin/release
-          ls -lh target/aarch64-apple-ios/release
+          ./create_xcframework.sh
+          zip -r target/bundle.zip target/YXY.xcframework
+          openssl dgst -sha256 target/bundle.zip > target/bundle.zip.checksum
+
+      - name: Upload Bundle
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: aarch64-apple-darwin
+          path: |
+            target/bundle.zip
+            target/bundle.zip.checksum
 
       - name: Upload build artifact for aarch64-apple-darwin
         uses: actions/upload-artifact@v3.1.0
@@ -83,12 +97,12 @@ jobs:
       - name: Upload build artifact for aarch64-apple-ios
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: aarch64-apple-darwin
+          name: aarch64-apple-ios
           path: |
             target/aarch64-apple-ios/release/*yxy*
 
   publish:
-    needs: [build, aarch64-macos]
+    needs: [build, xcframework]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
@@ -111,7 +125,7 @@ jobs:
           cp artifacts/x86_64-pc-windows-msvc/yxy.dll dist/
           cp artifacts/x86_64-unknown-linux-gnu/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-unknown-linux-gnu
           cp artifacts/x86_64-unknown-linux-gnu/libyxy.so dist/
-        # cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
+          cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
 
       - name: Publish release
         uses: "marvinpinto/action-automatic-releases@latest"
