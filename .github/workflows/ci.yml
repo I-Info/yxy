@@ -82,7 +82,7 @@ jobs:
       - name: Upload Bundle
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: aarch64-apple-darwin
+          name: xcframework-universal
           path: |
             target/bundle.zip
             target/bundle.zip.checksum
