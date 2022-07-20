@@ -126,6 +126,8 @@ jobs:
           cp artifacts/x86_64-unknown-linux-gnu/yxy dist/yxy-${GITHUB_REF##*/}-x86_64-unknown-linux-gnu
           cp artifacts/x86_64-unknown-linux-gnu/libyxy.so dist/
           cp artifacts/aarch64-apple-darwin/yxy dist/yxy-${GITHUB_REF##*/}-aarch64-apple-darwin
+          cp artifacts/xcframework-universal/bundle.zip dist/xcframework-universal-${GITHUB_REF##*/}.zip
+          cp artifacts/xcframework-universal/bundle.zip.checksum dist/xcframework-universal-${GITHUB_REF##*/}.zip.checksum
 
       - name: Publish release
         uses: "marvinpinto/action-automatic-releases@latest"
