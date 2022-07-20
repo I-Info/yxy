@@ -62,21 +62,30 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Build
+      - name: Build for aarch64-apple-darwin
         run: cargo build -vr --target=aarch64-apple-darwin
 
-      - name: Run tests
-        run: cargo test -vr --target=aarch64-apple-darwin
+      - name: Build for aarch-apple-ios
+        run: cargo build -vr --target=aarch64-apple-ios
 
       - name: List target
-        run: ls -l target/aarch64-apple-darwin
+        run: |
+          ls -lh target/aarch64-apple-darwin/release
+          ls -lh target/aarch64-apple-ios/release
 
-      - name: Upload build artifact
+      - name: Upload build artifact for aarch64-apple-darwin
         uses: actions/upload-artifact@v3.1.0
         with:
           name: aarch64-apple-darwin
           path: |
-            target/aarch64-apple-darwin/*yxy*
+            target/aarch64-apple-darwin/release/*yxy*
+
+      - name: Upload build artifact for aarch64-apple-ios
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: aarch64-apple-darwin
+          path: |
+            target/aarch64-apple-ios/release/*yxy*
 
   publish:
     needs: build
