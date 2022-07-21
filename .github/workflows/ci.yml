@@ -92,29 +92,19 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ./
-          
+
       - name: Create fat library
         run: |
           mkdir universal
-          lipo -create \
-		        x86_64-apple-darwin/libyxy.a \
-		        aarch64-apple-darwin/libyxy.a \
-	          -output universal/libyxy_macos.a
-          lipo -create \
-            x86_64-apple-ios/libyxy.a \
-            aarch64-apple-ios-sim/libyxy.a \
-            -output universal/libyxy_iossim.a
+          lipo -create x86_64-apple-darwin/libyxy.a aarch64-apple-darwin/libyxy.a -output universal/libyxy_macos.a
+          lipo -create x86_64-apple-ios/libyxy.a aarch64-apple-ios-sim/libyxy.a -output universal/libyxy_iossim.a
 
       - name: Create XCFramework & Bundle
         run: |
-          xcodebuild -create-xcframework \
-	          -library ./universal/libyxy_macos.a -headers ./include \
-	          -library ./universal/libyxy_iossim.a -headers ./include \
-	          -library ./aarch64-apple-ios/libyxy.a -headers ./include \
-	          -output yxy.xcframework
+          xcodebuild -create-xcframework -library ./universal/libyxy_macos.a -headers ./include -library ./universal/libyxy_iossim.a -headers ./include -library ./aarch64-apple-ios/libyxy.a -headers ./include -output yxy.xcframework
           zip -r bundle.zip yxy.xcframework
           openssl dgst -sha256 bundle.zip > bundle.zip.checksum
-      
+
       - name: Upload Bundle
         uses: actions/upload-artifact@v3.1.0
         with:
