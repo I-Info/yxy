@@ -70,6 +70,8 @@ jobs:
         run: rustup target list
 
       - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.target }}
 
       - name: Build
         run: cargo build -r --target ${{ matrix.target }}
