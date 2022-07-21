@@ -1,6 +1,6 @@
 [package]
 name = "yxy"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["IInfo <info@i1nfo.com>"]
@@ -38,7 +38,6 @@ features = [
 
 [dependencies.reqwest]
 version = "0.11"
-# default-features = false 
 features = [
     "blocking",
     "json",

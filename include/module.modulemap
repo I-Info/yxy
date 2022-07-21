@@ -1,4 +1,4 @@
-module YXY {
+module yxy {
     header "yxy.h"
     export *
 }

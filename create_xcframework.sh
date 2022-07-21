@@ -24,11 +24,11 @@ lipo -create \
 
 
 echo "Creating XCFramework bundle..."
-rm -rf target/YXY.xcframework
+rm -rf target/yxy.xcframework
 
 xcodebuild -create-xcframework \
 	-library ./target/universal/release/libyxy_macos.a -headers ./include \
 	-library ./target/universal/release/libyxy_iossim.a -headers ./include \
 	-library ./target/aarch64-apple-ios/release/libyxy.a -headers ./include \
-	-output target/YXY.xcframework
+	-output target/yxy.xcframework
 
