@@ -76,8 +76,9 @@ jobs:
       - name: Build & Create XCFramework Bundle
         run: |
           ./create_xcframework.sh
-          zip -r target/bundle.zip target/YXY.xcframework
-          openssl dgst -sha256 target/bundle.zip > target/bundle.zip.checksum
+          cd target
+          zip -r bundle.zip yxy.xcframework
+          openssl dgst -sha256 bundle.zip > bundle.zip.checksum
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3.1.0
