@@ -77,6 +77,7 @@ jobs:
         run: |
           ./create_xcframework.sh
           cd target
+          rm bundle.zip
           zip -r bundle.zip yxy.xcframework
           openssl dgst -sha256 bundle.zip > bundle.zip.checksum
 
