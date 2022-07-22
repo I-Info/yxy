@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install ARM target
+      - name: Install target
         run: rustup update && rustup target add ${{ matrix.target }}
 
       - name: List support target platform
