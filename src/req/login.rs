@@ -358,13 +358,4 @@ mod test {
 
         Ok(())
     }
-
-    #[test]
-    fn get_captcha() -> Result<(), Error> {
-        let handler = LoginHandler::new("12345678911".to_string())?;
-        let security_token = handler.get_security_token()?;
-        let result = handler.get_image_captcha(&security_token.security_token)?;
-        assert_eq!(&result[..22], "data:image/jpeg;base64");
-        Ok(())
-    }
 }
