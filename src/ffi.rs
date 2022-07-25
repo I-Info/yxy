@@ -71,6 +71,7 @@
 //!     code = do_login(&handle, verification_code, &l_result);
 //!     if (code) {
 //!       printf("fail to login: %d\n", code);
+//!       return;
 //!     }
 //!     printf("login success\n");
 //!     printf("uid: %s\ntoken: %s\ndivice_id: %s\nbind_card_status: %d\n",
@@ -78,6 +79,7 @@
 //!            l_result->bind_card_status);
 //!   
 //!     free_login_result(l_result); // remember to free the memory
+//!     free_c_string(handle.device_id);
 //! }
 //! ```
 //!

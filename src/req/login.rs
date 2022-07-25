@@ -77,6 +77,15 @@ pub struct LoginHandler {
     client: Client,
 }
 
+mod error_messages {
+    pub const WRONG_VERIFY_CODE: &'static str = "您已输错";
+    pub const BAD_PHONE_NUM: &'static str = "请输入正确的手机号";
+    pub const BAD_PHONE_NUM_FORMAT: &'static str = "手机号码格式错误";
+    pub const TOO_FREQUENT: &'static str = "经过你的";
+    pub const TOO_MANY_TRIES: &'static str = "发送超限，请明天再来";
+    pub const FLOW_CONTROL: &'static str = "触发号码天级流控";
+}
+
 impl LoginHandler {
     pub fn new(phone_num: String) -> Result<Self, Error> {
         let device_id = gen_device_id();
@@ -192,13 +201,14 @@ impl LoginHandler {
         let resp_ser: BasicResponse<Data> = resp.json()?;
         if resp_ser.success == false {
             if resp_ser.status_code == 203 {
-                if resp_ser.message == "请输入正确的手机号"
-                    || resp_ser.message == "手机号码格式错误"
+                if resp_ser.message == error_messages::BAD_PHONE_NUM
+                    || resp_ser.message == error_messages::BAD_PHONE_NUM_FORMAT
                 {
                     return Err(Error::BadPhoneNumber);
                 }
-                if resp_ser.message == "发送超限，请明天再来"
-                    || &resp_ser.message[..4] == "经过你的"
+                if resp_ser.message.starts_with(error_messages::TOO_FREQUENT)
+                    || resp_ser.message == error_messages::FLOW_CONTROL
+                    || resp_ser.message == error_messages::TOO_MANY_TRIES
                 {
                     return Err(Error::VerificationLimit);
                 }
@@ -248,8 +258,12 @@ impl LoginHandler {
                 )))
             }
         };
+
         if resp_ser.success == false {
-            if &resp_ser.message[..4] == "您已输错" {
+            if resp_ser
+                .message
+                .starts_with(error_messages::WRONG_VERIFY_CODE)
+            {
                 return Err(Error::BadVerificationCode);
             }
 
