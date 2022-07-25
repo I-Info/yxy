@@ -72,7 +72,11 @@ void free_ele_result(struct ele_result *p);
 /**
  * Generate random device id -- C Bind
  * -----------
- * Generate random device into struct `login_handle`
+ * Generate random device into struct `login_handle`.
+ *
+ * The caller is responsible for using `free_c_string` to deallocate
+ * the string in the structure.
+ *
  * # Inputs
  * - `handle: *const login_handle`: Pointer of Login handle
  */
