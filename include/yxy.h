@@ -10,13 +10,13 @@ typedef struct ele_result {
   float surplus_amount;
   float subsidy;
   float subsidy_amount;
-  char display_room_name[32];
-  char room_status[32];
+  char *display_room_name;
+  char *room_status;
 } ele_result;
 
 typedef struct login_handle {
-  char phone_num[12];
-  char device_id[38];
+  char *phone_num;
+  char *device_id;
 } login_handle;
 
 typedef struct security_token_result {
