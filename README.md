@@ -1,7 +1,8 @@
 # YXY
 YXY(YSchool) platform spider library, written in rust.
 
-[![crates.io](https://img.shields.io/crates/v/yxy.svg)](https://crates.io/crates/yxy)
+[![crates.io](https://img.shields.io/crates/v/yxy.svg?logo=rust)](https://crates.io/crates/yxy)
+[![docs.rs](https://img.shields.io/docsrs/yxy/latest?label=docs.rs&logo=docs.rs)](https://docs.rs/yxy)
 [![CI](https://github.com/I-Info/yxy/actions/workflows/ci.yml/badge.svg)](https://github.com/I-Info/yxy/actions/workflows/ci.yml)
 
 [中文说明文档](https://github.com/I-Info/yxy/blob/main/README-zh.md)
