@@ -53,8 +53,23 @@
 //!       return;
 //!     }
 //!     printf("security token: %s\nlevel: %d\n", sec_token->token, sec_token->level);
-//!   
-//!     code = send_verification_code(&handle, sec_token->token, NULL);
+//!     
+//!     if (sec_token->level != 0) {
+//!         char *image;
+//!         code = get_captcha_image(&handle, sec_token->token, &image);
+//!         if (code) {
+//!             printf("fail to get captcha image: %d\n", code);
+//!             return;
+//!         }
+//!         char captcha_code[5] = {0};
+//!         printf("Captcha image: %s\n", image);
+//!         printf("Please solve the image captcha and input the code: ");
+//!         scanf("%4s", captcha_code);
+//!         code = send_verification_code(&handle, sec_token->token, captcha_code);
+//!     } else {
+//!         code = send_verification_code(&handle, sec_token->token, NULL);
+//!     }
+//!
 //!     if (code == 0 || code == 1) {
 //!       printf("send verification code success\n");
 //!     } else {
@@ -63,9 +78,9 @@
 //!     }
 //!     free_security_token_result(sec_token);
 //!   
-//!     char verification_code[7];
+//!     char verification_code[7] = {0};
 //!     printf("please input verification code:");
-//!     scanf("%s", verification_code);
+//!     scanf("%6s", verification_code);
 //!   
 //!     login_result *l_result;
 //!     code = do_login(&handle, verification_code, &l_result);
@@ -92,6 +107,7 @@
 //! - `204`: Bad phone number
 //! - `205`: Limit of SMS verification code sent
 //! - `206`: Bad(Wrong) verification code
+//! - `207`: Get captcha image failed
 
 use std::{
     ffi::{CStr, CString},
@@ -261,6 +277,10 @@ pub extern "C" fn gen_device_id(handler: *mut login_handle) {
     }
 }
 
+/// Security token result
+/// -----------
+/// - `token: *mut c_char`: token c-string
+/// - `level: c_int`: security level, 0: no captcha required, 1: captcha required
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub struct security_token_result {
@@ -327,14 +347,67 @@ pub extern "C" fn free_c_string(c_string: *mut c_char) {
     }
 }
 
+/// Get captcha image -- C Bind
+/// -----------
+/// Get captcha image in base64 format.
+///
+/// Like `data:image/jpeg;base64,xxxxxxxxxxxxxx`
+///
+/// # Inputs
+/// - `handle: *const login_handle`: Pointer of Login handle
+/// - `security_token: *const c_char`: security token
+/// - `result: *mut *mut c_char`: second-level pointer for result
+///
+/// # Returns
+/// - `result: *mut *mut c_char`: captcha image in base64
+///
+/// # Errors
+/// - `207`: Get captcha image failed
+/// - `101: Other errors
+///
+/// # Usage
+///
+#[no_mangle]
+pub extern "C" fn get_captcha_image(
+    handle: *const login_handle,
+    security_token: *const c_char,
+    result: *mut *mut c_char,
+) -> c_int {
+    assert!(!handle.is_null());
+    assert!(!security_token.is_null());
+
+    let handler = init_handler(handle).unwrap();
+    let security_token = unsafe { c_string_to_str(security_token) };
+    match handler.get_captcha_image(security_token) {
+        Ok(image) => {
+            unsafe {
+                (*result) = CString::new(image).unwrap().into_raw();
+            }
+
+            0 // Return 0 for success
+        }
+
+        Err(e) => {
+            eprintln!("{}", e);
+            match e {
+                crate::error::Error::Runtime(_) => {
+                    207 // Return 207 for get captcha image error
+                }
+                _ => 101, // Return 101 for other errors
+            }
+        }
+    }
+}
+
 /// Send SMS verification code -- C Bind
 /// -----------
 /// # Inputs
 /// - `handle: *const login_handle`: Pointer of Login handle
 /// - `security_token: *const c_char`: c-string of security token
-/// - `captcha: *const c_char`: c-string of captcha
+/// - `captcha: *const c_char`: c-string of captcha.
+/// If captcha input `NULL`, it means no captcha is required.
 /// # Returns
-/// - `c_int`: 0 on success, 1 on user is not exist(registered), otherwise error code
+/// - `c_int`: `0` on success, `1` on user is not exist(registered), otherwise error code
 /// # Errors
 /// - `203`: Initialize login handler failed
 /// - `204`: Bad phone number
@@ -374,6 +447,9 @@ pub extern "C" fn send_verification_code(
     }
 }
 
+/// Login result
+/// -----------
+/// - `bind_card_status: c_int`: 0: not bind, 1: bound
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub struct login_result {

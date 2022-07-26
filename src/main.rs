@@ -166,7 +166,7 @@ fn query_uid(phone_num: &str, verbose: bool) -> Result<(), yxy::error::Error> {
     if security_token.level != 0 {
         // image captcha required
         println!("Image captcha required.");
-        let result = handler.get_image_captcha(&security_token.security_token)?;
+        let result = handler.get_captcha_image(&security_token.security_token)?;
 
         println!("Captcha: {}", result);
 

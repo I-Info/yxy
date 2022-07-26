@@ -144,7 +144,7 @@ impl LoginHandler {
     /// Get image captcha
     /// ------------
     /// Return image captcha base64 string
-    pub fn get_image_captcha(&self, security_token: &str) -> Result<String, Error> {
+    pub fn get_captcha_image(&self, security_token: &str) -> Result<String, Error> {
         let mut body = self.get_basic_request_body();
         body.insert("securityToken", json!(security_token));
 

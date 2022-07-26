@@ -19,11 +19,22 @@ typedef struct login_handle {
   char *device_id;
 } login_handle;
 
+/**
+ * Security token result
+ * -----------
+ * - `token: *mut c_char`: token c-string
+ * - `level: c_int`: security level, 0: no captcha required, 1: captcha required
+ */
 typedef struct security_token_result {
   int level;
   char *token;
 } security_token_result;
 
+/**
+ * Login result
+ * -----------
+ * - `bind_card_status: c_int`: 0: not bind, 1: bound
+ */
 typedef struct login_result {
   char *uid;
   char *token;
@@ -116,14 +127,39 @@ void free_security_token_result(struct security_token_result *p);
 void free_c_string(char *c_string);
 
 /**
+ * Get captcha image -- C Bind
+ * -----------
+ * Get captcha image in base64 format.
+ *
+ * Like `data:image/jpeg;base64,xxxxxxxxxxxxxx`
+ *
+ * # Inputs
+ * - `handle: *const login_handle`: Pointer of Login handle
+ * - `security_token: *const c_char`: security token
+ * - `result: *mut *mut c_char`: second-level pointer for result
+ *
+ * # Returns
+ * - `result: *mut *mut c_char`: captcha image in base64
+ *
+ * # Errors
+ * - `207`: Get captcha image failed
+ * - `101: Other errors
+ *
+ * # Usage
+ *
+ */
+int get_captcha_image(const struct login_handle *handle, const char *security_token, char **result);
+
+/**
  * Send SMS verification code -- C Bind
  * -----------
  * # Inputs
  * - `handle: *const login_handle`: Pointer of Login handle
  * - `security_token: *const c_char`: c-string of security token
- * - `captcha: *const c_char`: c-string of captcha
+ * - `captcha: *const c_char`: c-string of captcha.
+ * If captcha input `NULL`, it means no captcha is required.
  * # Returns
- * - `c_int`: 0 on success, 1 on user is not exist(registered), otherwise error code
+ * - `c_int`: `0` on success, `1` on user is not exist(registered), otherwise error code
  * # Errors
  * - `203`: Initialize login handler failed
  * - `204`: Bad phone number
