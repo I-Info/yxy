@@ -1,0 +1,31 @@
+name: Swift Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: "I-Info/yxy-swift"
+          ssh-key: ${{ secrets.YXY_SWIFT_PRIVATE_KEY }}
+          persist-credentials: true
+
+      - name: Fetch and update
+        run: |
+          wget -O checksum https://github.com/I-Info/yxy/releases/download/${{ github.event.release.tag_name }}/xcframework-universal-${{ github.event.release.tag_name }}.zip.checksum 
+          sum=`sed -e 's/SHA256(bundle.zip)= //g' checksum`
+          sed '20,21d' Package.swift | sed '19a \            url: "https://github.com/I-Info/yxy/releases/download/${{ github.event.release.tag_name }}/xcframework-universal-${{ github.event.release.tag_name }}.zip"' | sed "20a \            checksum: \"${sum}\"" | cat > Package.swift.tmp
+          rm checksum
+
+      - name: Commit changes and tag
+        run: |
+          mv Package.swift.tmp Package.swift
+          git add Package.swift
+          git commit -m "Update to ${{ github.event.release.tag_name }}"
+          git tag ${{ github.event.release.tag_name }}
+          git push
+          git push --tags
